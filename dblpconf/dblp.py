@@ -61,8 +61,43 @@ class Dblp(object):
         """
         if not os.path.isfile(self.xmlfile):
             raise ("dblp xml file %s not downloaded yet - please call getXmlFile first")
-        return etree.iterparse(source=self.xmlfile, dtd_validation=True, load_dtd=True)  # required dtd
-                
-            
+        # with dtd validation
+        return etree.iterparse(source=self.xmlfile, events=('end', 'start' ), dtd_validation=True, load_dtd=True)  
+    
+    def clear_element(self,element):
+        """Free up memory for temporary element tree after processing the element"""
+        element.clear()
+        while element.getprevious() is not None:
+            del element.getparent()[0]
+    
+    def asDictOfLod(self,limit=1000):
+        '''
+        get the dblp data as a list of dicts
+        '''
+        index=0
+        level=0
+        dictOfLod={}
+        current={}
+        for event, elem in self.iterParser():
+            if event == 'start': 
+                level += 1;
+                if level==2:
+                    kind=elem.tag
+                    if not kind in dictOfLod:
+                        dictOfLod[kind]=[]
+                    lod=dictOfLod[kind]
+                elif level==3:
+                    current[elem.tag]=elem.text    
+            elif event == 'end':
+                if level==2:
+                    lod.append(current)
+                    current={} 
+                level -= 1;
+            index+=1
+            self.clear_element(elem)
+            if index>=limit:
+                break
+        return dictOfLod
             
         
+    

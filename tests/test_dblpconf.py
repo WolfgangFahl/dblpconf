@@ -15,7 +15,7 @@ class TestDblpConf(unittest.TestCase):
 
 
     def setUp(self):
-        self.debug=False
+        self.debug=True
         pass
 
 
@@ -54,9 +54,21 @@ class TestDblpConf(unittest.TestCase):
             if index%showProgressAt==0:
                 elapsed=time.time()-starttime
                 print ("%8d: %5.1f s %5.0f/s %s" % (index,elapsed,index/elapsed,elem))
-            elem.clear()    
+            dblp.clear_element(elem)    
         self.assertTrue(index>70000000)
-
+        
+    def testAsDictOfLod(self):
+        '''
+        get  dict of list of dicts (tables)
+        '''
+        dblp=Dblp()
+        xmlfile=dblp.getXmlFile()
+        self.assertTrue(xmlfile is not None)
+        dictOfLod=dblp.asDictOfLod(3000)
+        for i, (kind, lod) in enumerate(dictOfLod.items()):
+            print ("#%4d %4d: %s" % (i+1,len(lod),kind))
+            for row in lod:
+                print ("  %s" % row) 
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
