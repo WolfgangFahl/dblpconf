@@ -42,6 +42,7 @@ setup(name='dblpconf',
       install_requires=[
         'pyFlaskBootstrap4',
         'py-3rdparty-mediawiki>=0.1.23',
-        'pylodstorage'
+        'pylodstorage',
+        'lxml'
       ],
       zip_safe=False)

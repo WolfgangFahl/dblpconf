@@ -15,3 +15,5 @@ pycrypto
 pydevd
 # https://pypi.org/project/pylodstorage/
 pylodstorage
+# parser
+lxml

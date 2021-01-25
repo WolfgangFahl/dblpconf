@@ -45,9 +45,13 @@ class TestDblpConf(unittest.TestCase):
         self.assertTrue(xmlfile is not None)
         index=0
         starttime=time.time()
+        if self.debug:
+            showProgressAt=500000
+        else:
+            showProgressAt=5000000
         for _, elem in dblp.iterParser():
             index+=1
-            if index%500000==0:
+            if index%showProgressAt==0:
                 elapsed=time.time()-starttime
                 if self.debug:
                     print ("%8d: %5.1f s %5.0f/s %s" % (index,elapsed,index/elapsed,elem))
