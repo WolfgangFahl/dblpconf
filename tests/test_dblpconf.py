@@ -7,6 +7,7 @@ import unittest
 from dblpconf.dblp import Dblp
 import os
 import time
+from lodstorage.sql import SQLDB, EntityInfo
 
 class TestDblpConf(unittest.TestCase):
     '''
@@ -66,8 +67,14 @@ class TestDblpConf(unittest.TestCase):
         starttime=time.time()
         dictOfLod=dblp.asDictOfLod(limit,progress=1000000)
         elapsed=time.time()-starttime
+        dbname="%s/%s" % (dblp.xmlpath,"dblp.sqlite")
+        executeMany=True;
+        fixNone=True
+        sqlDB=SQLDB(dbname=dbname,debug=self.debug,errorDebug=True)
         for i, (kind, lod) in enumerate(dictOfLod.items()):
             print ("#%4d %5d: %s" % (i+1,len(lod),kind))
+            entityInfo=sqlDB.createTable(lod[:100],kind,'key')
+            sqlDB.store(lod,entityInfo,executeMany=executeMany,fixNone=fixNone)
             for j,row in enumerate(lod):
                 print ("  %4d: %s" % (j,row)) 
                 if j>sample:
