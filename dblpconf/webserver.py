@@ -70,6 +70,7 @@ class WebServer(AppWrap):
         '''
         menuList=[
             MenuItem('/','Home'),
+            MenuItem('http://wiki.bitplan.com/index.php/Dblpconf','Docs'),
             MenuItem('https://github.com/WolfgangFahl/dblpconf','github'),
             ]
         if current_user.is_anonymous:

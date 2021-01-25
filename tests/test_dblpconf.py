@@ -6,6 +6,7 @@ Created on 2021-01-25
 import unittest
 from dblpconf.dblp import Dblp
 import os
+import time
 
 class TestDblpConf(unittest.TestCase):
     '''
@@ -14,7 +15,7 @@ class TestDblpConf(unittest.TestCase):
 
 
     def setUp(self):
-        self.debug=False
+        self.debug=True
         pass
 
 
@@ -34,6 +35,23 @@ class TestDblpConf(unittest.TestCase):
         stats=os.stat(xmlfile)
         self.assertTrue(stats.st_size>3000000000)
         pass
+    
+    def testParser(self):
+        '''
+        test parsing the xml file
+        '''
+        dblp=Dblp()
+        xmlfile=dblp.getXmlFile()
+        self.assertNotNone(xmlfile)
+        index=0
+        starttime=time.time()
+        for _, elem in dblp.iterParser():
+            index+=1
+            if index%500000==0:
+                elapsed=time.time()-starttime
+                print ("%8d: %5.1f s %5.0f/s %s" % (index,elapsed,index/elapsed,elem))
+            elem.clear()    
+        self.assertTrue(index>70000000)
 
 
 if __name__ == "__main__":
