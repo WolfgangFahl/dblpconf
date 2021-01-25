@@ -13,15 +13,12 @@ class TestDblpConf(unittest.TestCase):
     test the dblp conferences access
     '''
 
-
     def setUp(self):
         self.debug=True
         pass
 
-
     def tearDown(self):
         pass
-
 
     def testDblpConf(self):
         '''
@@ -61,14 +58,21 @@ class TestDblpConf(unittest.TestCase):
         '''
         get  dict of list of dicts (tables)
         '''
-        dblp=Dblp()
+        dblp=Dblp(dtd_validation=False)
         xmlfile=dblp.getXmlFile()
         self.assertTrue(xmlfile is not None)
-        dictOfLod=dblp.asDictOfLod(3000)
+        limit=1000000000
+        sample=5
+        starttime=time.time()
+        dictOfLod=dblp.asDictOfLod(limit,progress=1000000)
+        elapsed=time.time()-starttime
         for i, (kind, lod) in enumerate(dictOfLod.items()):
-            print ("#%4d %4d: %s" % (i+1,len(lod),kind))
-            for row in lod:
-                print ("  %s" % row) 
+            print ("#%4d %5d: %s" % (i+1,len(lod),kind))
+            for j,row in enumerate(lod):
+                print ("  %4d: %s" % (j,row)) 
+                if j>sample:
+                    break
+        print ("%5.1f s %5d rows/s" % (elapsed,limit/elapsed))
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

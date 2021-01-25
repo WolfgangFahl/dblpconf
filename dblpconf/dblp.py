@@ -16,7 +16,7 @@ class Dblp(object):
     see https://github.com/IsaacChanghau/DBLPParser/blob/master/src/dblp_parser.py
     '''
 
-    def __init__(self,xmlname="dblp.xml",xmlpath=None,gzurl="https://dblp.uni-trier.de/xml/dblp.xml.gz"):
+    def __init__(self,xmlname="dblp.xml",dtd_validation=True,xmlpath=None,gzurl="https://dblp.uni-trier.de/xml/dblp.xml.gz"):
         '''
         Constructor
         
@@ -33,6 +33,7 @@ class Dblp(object):
         self.xmlpath=xmlpath
         self.xmlfile="%s/%s" % (self.xmlpath,self.xmlname)
         self.dtdfile="%s/%s" % (self.xmlpath,self.xmlname.replace(".xml",".dtd"))
+        self.dtd_validation=dtd_validation
         
     def getXmlFile(self):
         '''
@@ -62,7 +63,7 @@ class Dblp(object):
         if not os.path.isfile(self.xmlfile):
             raise ("dblp xml file %s not downloaded yet - please call getXmlFile first")
         # with dtd validation
-        return etree.iterparse(source=self.xmlfile, events=('end', 'start' ), dtd_validation=True, load_dtd=True)  
+        return etree.iterparse(source=self.xmlfile, events=('end', 'start' ), dtd_validation=self.dtd_validation, load_dtd=True)  
     
     def clear_element(self,element):
         """Free up memory for temporary element tree after processing the element"""
@@ -70,7 +71,7 @@ class Dblp(object):
         while element.getprevious() is not None:
             del element.getparent()[0]
     
-    def asDictOfLod(self,limit=1000):
+    def asDictOfLod(self,limit=1000,delim=',',progress=None):
         '''
         get the dblp data as a list of dicts
         '''
@@ -86,14 +87,22 @@ class Dblp(object):
                     if not kind in dictOfLod:
                         dictOfLod[kind]=[]
                     lod=dictOfLod[kind]
+                    if hasattr(elem, "attrib"):
+                        current = {**current, **elem.attrib}
                 elif level==3:
-                    current[elem.tag]=elem.text    
+                    if elem.tag in current:
+                        current[elem.tag]="%s%s%s" % (current[elem.tag],delim,elem.text)
+                    else:
+                        current[elem.tag]=elem.text    
             elif event == 'end':
                 if level==2:
                     lod.append(current)
                     current={} 
                 level -= 1;
             index+=1
+            if progress is not None:
+                if index%progress==0:
+                    print(".",flush=True,end='')
             self.clear_element(elem)
             if index>=limit:
                 break
