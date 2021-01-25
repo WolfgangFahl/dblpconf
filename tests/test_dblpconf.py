@@ -15,7 +15,7 @@ class TestDblpConf(unittest.TestCase):
 
 
     def setUp(self):
-        self.debug=True
+        self.debug=False
         pass
 
 
@@ -42,14 +42,15 @@ class TestDblpConf(unittest.TestCase):
         '''
         dblp=Dblp()
         xmlfile=dblp.getXmlFile()
-        self.assertNotNone(xmlfile)
+        self.assertTrue(xmlfile is not None)
         index=0
         starttime=time.time()
         for _, elem in dblp.iterParser():
             index+=1
             if index%500000==0:
                 elapsed=time.time()-starttime
-                print ("%8d: %5.1f s %5.0f/s %s" % (index,elapsed,index/elapsed,elem))
+                if self.debug:
+                    print ("%8d: %5.1f s %5.0f/s %s" % (index,elapsed,index/elapsed,elem))
             elem.clear()    
         self.assertTrue(index>70000000)
 
