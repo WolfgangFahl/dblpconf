@@ -37,7 +37,7 @@ class TestDblpConf(unittest.TestCase):
         '''
         test parsing the xml file
         '''
-        dblp=Dblp()
+        dblp=Dblp(dtd_validation=False)
         xmlfile=dblp.getXmlFile()
         self.assertTrue(xmlfile is not None)
         index=0
