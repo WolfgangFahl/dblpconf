@@ -53,8 +53,7 @@ class TestDblpConf(unittest.TestCase):
             index+=1
             if index%showProgressAt==0:
                 elapsed=time.time()-starttime
-                if self.debug:
-                    print ("%8d: %5.1f s %5.0f/s %s" % (index,elapsed,index/elapsed,elem))
+                print ("%8d: %5.1f s %5.0f/s %s" % (index,elapsed,index/elapsed,elem))
             elem.clear()    
         self.assertTrue(index>70000000)
 
