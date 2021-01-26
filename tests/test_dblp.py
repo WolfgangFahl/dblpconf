@@ -5,13 +5,16 @@ Created on 2021-01-25
 '''
 import unittest
 from dblp.dblp import Dblp
+from dblp.schema import SchemaManager
 import os
 import time
 from lodstorage.sql import SQLDB
+from lodstorage.uml import UML
+from datetime import datetime
 
-class TestDblpConf(unittest.TestCase):
+class TestDblp(unittest.TestCase):
     '''
-    test the dblp conferences access
+    test the dblp xml parser and pylodstorage extraction for it
     '''
 
     def setUp(self):
@@ -36,7 +39,7 @@ class TestDblpConf(unittest.TestCase):
             print("dblp xml file is %s " % self.xmlfile)
         return dblp
     
-    def testDblpConf(self):
+    def testDblpDownload(self):
         '''
         test dblp access
         '''
@@ -45,7 +48,7 @@ class TestDblpConf(unittest.TestCase):
         self.assertTrue(dblp.isDownloaded(minsize=minsize))
         pass
     
-    def testParser(self):
+    def testDblpXmlParser(self):
         '''
         test parsing the xml file
         '''
@@ -79,9 +82,7 @@ class TestDblpConf(unittest.TestCase):
         starttime=time.time()
         dictOfLod=dblp.asDictOfLod(limit,progress=1000)
         elapsed=time.time()-starttime
-        xmlpath="/tmp/dblp"
-        os.makedirs(xmlpath,exist_ok=True)
-        dbname="%s/%s" % (xmlpath,"dblp.sqlite")
+        dbname="%s/%s" % (dblp.xmlpath,"dblp.sqlite")
         if os.path.isfile(dbname):
             os.remove(dbname)
         executeMany=True;
@@ -99,6 +100,37 @@ class TestDblpConf(unittest.TestCase):
                     break
         if self.debug:
             print ("%5.1f s %5d rows/s" % (elapsed,limit/elapsed))
+            
+    def testUml(self):
+        '''
+        test generating the uml diagram for the entities
+        '''
+        #self.mock=False
+        dblp=self.getDlp()
+        dbname="%s/%s" % (dblp.xmlpath,"dblp.sqlite")
+        sqlDB=SQLDB(dbname)
+        uml=UML()
+        now=datetime.now()
+        nowYMD=now.strftime("%Y-%m-%d")
+        title="""dblp.xml  Entities
+%s
+[[https://dblp.org/ Copyright 2009-2021 dblp computer science bibliography]]
+see also [[https://github.com/WolfgangFahl/dblpconf dblp conf open source project]]
+""" %nowYMD
+        tableList=sqlDB.getTableList()
+        
+        schemaManager=SchemaManager()
+        for table in tableList:
+            table['schema']=table['name']
+            countQuery="SELECT count(*) as count from %s" % table['name']
+            countResult=sqlDB.query(countQuery)
+            table['instances']=countResult[0]['count']
+        plantUml=uml.mergeSchema(schemaManager,tableList,title=title,packageName='dblp',generalizeTo="Record")
+        show=False
+        if show:
+            print(plantUml)
+        self.assertTrue("Record <|-- article" in plantUml)
+        self.assertTrue("class Record " in plantUml)
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
