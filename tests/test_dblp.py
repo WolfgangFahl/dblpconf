@@ -101,6 +101,7 @@ class TestDblp(unittest.TestCase):
         tableList=sqlDB.getTableList()
         expected=7 if self.mock else 8
         self.assertEqual(expected,len(tableList))
+        sqlDB.close()
             
     def testUml(self):
         '''

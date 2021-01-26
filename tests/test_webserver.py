@@ -32,7 +32,7 @@ class TestWebServer(unittest.TestCase):
         pass
 
     def testSamples(self):
-        html=self.getResponse("/sample/article")
+        html=self.getResponse("/sample/article/100")
         self.assertTrue("<th> publtype </th>" in html)
         pass
 
