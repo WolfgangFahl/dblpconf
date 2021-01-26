@@ -11,7 +11,7 @@ except:
     print('Curr dir:', os.getcwd())
     long_description = open('../../README.md').read()
 
-setup(name='dblp',
+setup(name='dblpconf',
       version='0.0.1',
       description='dblp conf',
       long_description=long_description,
