@@ -4,13 +4,15 @@ Created on 2021-01-25
 @author: wf
 '''
 import unittest
-from dblp.dblp import Dblp
-from dblp.schema import SchemaManager
+from dblp.dblpxml import Dblp
+from lodstorage.schema import SchemaManager,Schema
 import os
 import time
 from lodstorage.sql import SQLDB
 from lodstorage.uml import UML
 from datetime import datetime
+import re
+from lxml import etree
 
 class TestDblp(unittest.TestCase):
     '''
@@ -25,7 +27,7 @@ class TestDblp(unittest.TestCase):
     def tearDown(self):
         pass
     
-    def getDlp(self):
+    def getDblp(self):
         '''
         get the dblp xml file
         '''
@@ -43,16 +45,32 @@ class TestDblp(unittest.TestCase):
         '''
         test dblp access
         '''
-        dblp=self.getDlp()
+        dblp=self.getDblp()
         minsize=988816 if self.mock else 3099271450
         self.assertTrue(dblp.isDownloaded(minsize=minsize))
         pass
+    
+    def testCreateSample(self):
+        '''
+        test creating a sample file
+        '''
+        return
+        self.mock=False
+        dblp=self.getDblp()
+        sampletree=dblp.createSample()
+        records=len(sampletree.getroot().getchildren())
+        #if self.debug:
+        print("sample has %d records" % records)
+        xmlstr = dblp.prettyXml(sampletree)
+        samplefile="/tmp/dblpsample.xml"
+        print(xmlstr,  file=open(samplefile, 'w'))
+               
     
     def testDblpXmlParser(self):
         '''
         test parsing the xml file
         '''
-        dblp=self.getDlp()
+        dblp=self.getDblp()
         xmlfile=dblp.getXmlFile()
         self.assertTrue(xmlfile is not None)
         index=0
@@ -70,43 +88,26 @@ class TestDblp(unittest.TestCase):
         expectedIndex=35000 if self.mock else 70000000
         self.assertTrue(index>expectedIndex)
         
-    def testAsDictOfLod(self):
+    def testSqlLiteDatabaseCreation(self):
         '''
         get  dict of list of dicts (tables)
         '''
-        dblp=self.getDlp()
-        xmlfile=dblp.getXmlFile()
-        self.assertTrue(xmlfile is not None)
-        limit=10000
+        self.mock=True
+        dblp=self.getDblp()
+        limit=10000 if self.mock else 10000000
+        progress=1000 if self.mock else 100000
         sample=5
-        starttime=time.time()
-        dictOfLod=dblp.asDictOfLod(limit,progress=1000)
-        elapsed=time.time()-starttime
-        dbname="%s/%s" % (dblp.xmlpath,"dblp.sqlite")
-        if os.path.isfile(dbname):
-            os.remove(dbname)
-        executeMany=True;
-        fixNone=True
-        sqlDB=SQLDB(dbname=dbname,debug=self.debug,errorDebug=True)
-        for i, (kind, lod) in enumerate(dictOfLod.items()):
-            if self.debug:
-                print ("#%4d %5d: %s" % (i+1,len(lod),kind))
-            entityInfo=sqlDB.createTable(lod[:100],kind,'key')
-            sqlDB.store(lod,entityInfo,executeMany=executeMany,fixNone=fixNone)
-            for j,row in enumerate(lod):
-                if self.debug:
-                    print ("  %4d: %s" % (j,row)) 
-                if j>sample:
-                    break
-        if self.debug:
-            print ("%5.1f s %5d rows/s" % (elapsed,limit/elapsed))
+        sqlDB=dblp.getSqlDB(limit, progress, sample, debug=self.debug,recreate=self.mock)
+        tableList=sqlDB.getTableList()
+        expected=7 if self.mock else 8
+        self.assertEqual(expected,len(tableList))
             
     def testUml(self):
         '''
         test generating the uml diagram for the entities
         '''
         #self.mock=False
-        dblp=self.getDlp()
+        dblp=self.getDblp()
         dbname="%s/%s" % (dblp.xmlpath,"dblp.sqlite")
         sqlDB=SQLDB(dbname)
         uml=UML()
@@ -118,8 +119,18 @@ class TestDblp(unittest.TestCase):
 see also [[https://github.com/WolfgangFahl/dblpconf dblp conf open source project]]
 """ %nowYMD
         tableList=sqlDB.getTableList()
-        
-        schemaManager=SchemaManager()
+        schemaDefs={
+                'article': 'Article',
+                'book':'Book',
+                'incollection': 'In Collection',
+                'inproceedings': 'In Proceedings',
+                'mastersthesis': 'Master Thesis',
+                'phdthesis': "PhD Thesis",
+                'proceedings':'Proceedings',
+                'www':'Person'
+        }
+        baseUrl="http://wiki.bitplan.com/index.php/Dblpconf#"
+        schemaManager=SchemaManager(schemaDefs=schemaDefs,baseUrl=baseUrl)
         for table in tableList:
             table['schema']=table['name']
             countQuery="SELECT count(*) as count from %s" % table['name']

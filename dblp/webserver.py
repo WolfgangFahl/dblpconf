@@ -6,11 +6,12 @@ Created on 2020-12-30
 from fb4.app import AppWrap
 from fb4.login_bp import LoginBluePrint
 from flask_login import current_user, login_user,logout_user, login_required
-from flask import send_file
+from flask import send_file,abort
 from fb4.widgets import Link, Icon, Image, MenuItem
 from flask import render_template
 from wikibot.wikiuser import WikiUser
 from fb4.sqldb import db
+from dblp.dblpxml import Dblp
 import os
 
 class WebServer(AppWrap):
@@ -28,6 +29,7 @@ class WebServer(AppWrap):
             port(int): the port to use for http connections
             debug(bool): True if debugging should be switched on
         '''
+        self.debug=debug
         scriptdir = os.path.dirname(os.path.abspath(__file__))
         template_folder=scriptdir + '/../templates'
         super().__init__(host=host,port=port,debug=debug,template_folder=template_folder)
@@ -49,6 +51,10 @@ class WebServer(AppWrap):
         def index():
             return self.index()
         
+        @self.app.route('/sample/<entity>/<int:limit>')
+        def showSample(entity,limit):
+            return self.showSample(entity,limit)
+        
     def initDB(self):
         '''
         initialize the database
@@ -56,9 +62,25 @@ class WebServer(AppWrap):
         self.db.drop_all()
         self.db.create_all()
         self.initUsers()
+        dblp=Dblp()
+        self.sqlDB=dblp.getSqlDB(debug=self.debug)
+        self.tableList=self.sqlDB.getTableList()
+        self.tableDict={}
+        for table in self.tableList:
+            self.tableDict[table['name']]=table
     
     def initUsers(self):
         self.loginBluePrint.addUser(self.db,"admin","dblp")
+        
+    def showSample(self,entity,limit):
+        
+        if not entity in self.tableDict:
+            abort(404)
+        else:
+            menuList=self.adminMenuList(entity)
+            samples=self.sqlDB.query("select * from %s limit %d" % (entity,limit))
+            html=render_template("sample.html",title=entity,menuList=menuList,dictList=samples)
+            return html
             
     def adminMenuList(self,activeItem:str=None):
         '''
@@ -71,12 +93,16 @@ class WebServer(AppWrap):
         menuList=[
             MenuItem('/','Home'),
             MenuItem('http://wiki.bitplan.com/index.php/Dblpconf','Docs'),
-            MenuItem('https://github.com/WolfgangFahl/dblp','github'),
+            MenuItem('https://github.com/WolfgangFahl/dblpconf','github'),
             ]
         if current_user.is_anonymous:
             menuList.append(MenuItem('/login','login'))
         else:
             menuList.append(MenuItem('/logout','logout'))
+        for entity in self.tableDict.keys():
+            url='/sample/%s/1000' % entity
+            title="%s" %entity
+            menuList.append(MenuItem(url,title))
         
         if activeItem is not None:
             for menuItem in menuList:

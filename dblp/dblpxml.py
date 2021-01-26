@@ -5,10 +5,16 @@ Created on 2021-01-25
 '''
 from pathlib import Path
 from io import BytesIO
-import os
 import urllib.request
 from gzip import GzipFile
 from lxml import etree
+from collections import Counter
+from xml.dom import minidom
+from lodstorage.sql import SQLDB
+from lodstorage.schema import Schema
+import os
+import re
+import time
 
 class Dblp(object):
     '''
@@ -54,7 +60,49 @@ class Dblp(object):
             stats=os.stat(self.xmlfile)
             result=stats.st_size>=minsize
         return result
-        
+    
+    def prettyXml(self,tree,indent='  '):
+        xmlstr = minidom.parseString(etree.tostring(tree.getroot())).toprettyxml(indent=indent)
+        return xmlstr
+    
+    def createSample(self,keyPrefix="conf/",entityLimit=1000,entities=8,progress:int=500000):
+        '''
+        create a sample with the given entityLimit
+        '''
+        root = etree.Element('dblp')
+        counter=Counter()
+        level=0
+        count=0
+        for event, element in self.iterParser():
+            count+=1
+            if progress is not None:
+                if count%progress==0:
+                    print(".",flush=True,end='')
+                if count%(progress*80)==0:
+                    print("\n",flush=True)
+            if event == 'start': 
+                level += 1;
+                if level==2:
+                    counter[element.tag]+=1
+                    doadd=counter[element.tag]<=entityLimit
+                    if 'key' in element.attrib:
+                        key=element.attrib['key']
+                        if key.startswith(keyPrefix):
+                            doadd=True
+                    if (doadd):
+                        node=etree.fromstring(etree.tostring(element))
+                        root.append(node)
+                    else:
+                        keys=counter.keys()
+                        if len(keys)>=entities:
+                            break
+                        
+                pass
+            elif event == 'end':
+                level -=1;
+            self.clear_element(element)
+        sampleTree=etree.ElementTree(root) 
+        return sampleTree
         
     def getXmlFile(self):
         '''
@@ -97,6 +145,45 @@ class Dblp(object):
         while element.getprevious() is not None:
             del element.getparent()[0]
             
+    def getSqlDB(self,limit=1000000000,progress=100000,sample=None,debug=False,recreate=False):
+        '''
+        get the SQL database or create it from the XML content
+        '''
+        dbname="%s/%s" % (self.xmlpath,"dblp.sqlite")
+        if (os.path.isfile(dbname)) and not recreate:
+            sqlDB=SQLDB(dbname=dbname,debug=debug,errorDebug=True)
+        else:
+            if (os.path.isfile(dbname)) and recreate:
+                os.remove(dbname)
+            sqlDB=SQLDB(dbname=dbname,debug=debug,errorDebug=True)
+            starttime=time.time()
+            dictOfLod=self.asDictOfLod(limit,progress=progress)
+            elapsed=time.time()-starttime
+            executeMany=True;
+            fixNone=True      
+            for i, (kind, lod) in enumerate(dictOfLod.items()):
+                if debug:
+                    print ("#%4d %5d: %s" % (i+1,len(lod),kind))
+                entityInfo=sqlDB.createTable(lod[:100],kind,'key')
+                sqlDB.store(lod,entityInfo,executeMany=executeMany,fixNone=fixNone)
+                for j,row in enumerate(lod):
+                    if 'key' in row:
+                        key=row['key']
+                        if key.startswith("conf/"):
+                            row['conf']=re.sub(r"conf/(.*)/",r"\1")
+                            pass
+                    if debug:
+                        print ("  %4d: %s" % (j,row)) 
+                    if j>sample:
+                        break
+            if debug:
+                print ("%5.1f s %5d rows/s" % (elapsed,limit/elapsed))
+            tableList=sqlDB.getTableList()     
+            viewDDL=Schema.getGeneralViewDDL(tableList, "record")
+            if debug:
+                print(viewDDL)
+            sqlDB.execute(viewDDL)
+        return sqlDB
             
     def asDictOfLod(self,limit:int=1000,delim:str=',',progress:int=None):
         '''
