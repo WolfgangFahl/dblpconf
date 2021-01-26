@@ -15,7 +15,7 @@ class TestDblpConf(unittest.TestCase):
     '''
 
     def setUp(self):
-        self.debug=True
+        self.debug=False
         self.mock=True
         pass
 
@@ -88,14 +88,17 @@ class TestDblpConf(unittest.TestCase):
         fixNone=True
         sqlDB=SQLDB(dbname=dbname,debug=self.debug,errorDebug=True)
         for i, (kind, lod) in enumerate(dictOfLod.items()):
-            print ("#%4d %5d: %s" % (i+1,len(lod),kind))
+            if self.debug:
+                print ("#%4d %5d: %s" % (i+1,len(lod),kind))
             entityInfo=sqlDB.createTable(lod[:100],kind,'key')
             sqlDB.store(lod,entityInfo,executeMany=executeMany,fixNone=fixNone)
             for j,row in enumerate(lod):
-                print ("  %4d: %s" % (j,row)) 
+                if self.debug:
+                    print ("  %4d: %s" % (j,row)) 
                 if j>sample:
                     break
-        print ("%5.1f s %5d rows/s" % (elapsed,limit/elapsed))
+        if self.debug:
+            print ("%5.1f s %5d rows/s" % (elapsed,limit/elapsed))
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
