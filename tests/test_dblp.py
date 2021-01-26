@@ -128,7 +128,7 @@ see also [[https://github.com/WolfgangFahl/dblpconf dblp conf open source projec
         plantUml=uml.mergeSchema(schemaManager,tableList,title=title,packageName='dblp',generalizeTo="Record")
         show=False
         if show:
-            print(plantUml)
+            print(plantUml.replace('#/','#'))
         self.assertTrue("Record <|-- article" in plantUml)
         self.assertTrue("class Record " in plantUml)
 
