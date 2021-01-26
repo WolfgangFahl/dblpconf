@@ -4,10 +4,10 @@ Created on 2021-01-25
 @author: wf
 '''
 import unittest
-from dblpconf.dblp import Dblp
+from dblp.dblp import Dblp
 import os
 import time
-from lodstorage.sql import SQLDB, EntityInfo
+from lodstorage.sql import SQLDB
 
 class TestDblpConf(unittest.TestCase):
     '''

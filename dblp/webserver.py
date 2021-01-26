@@ -71,7 +71,7 @@ class WebServer(AppWrap):
         menuList=[
             MenuItem('/','Home'),
             MenuItem('http://wiki.bitplan.com/index.php/Dblpconf','Docs'),
-            MenuItem('https://github.com/WolfgangFahl/dblpconf','github'),
+            MenuItem('https://github.com/WolfgangFahl/dblp','github'),
             ]
         if current_user.is_anonymous:
             menuList.append(MenuItem('/login','login'))

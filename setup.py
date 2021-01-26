@@ -11,21 +11,21 @@ except:
     print('Curr dir:', os.getcwd())
     long_description = open('../../README.md').read()
 
-setup(name='dblpconf',
+setup(name='dblp',
       version='0.0.1',
       description='dblp conf',
       long_description=long_description,
       long_description_content_type='text/markdown',
-      url='https://github.com/WolfgangFahl/dblpconf',
-      download_url='https://github.com/WolfgangFahl/dblpconf',
+      url='https://github.com/WolfgangFahl/dblp',
+      download_url='https://github.com/WolfgangFahl/dblp',
       author='Wolfgang Fahl',
       author_email='wf@bitplan.com',
       license='Apache',
       project_urls=OrderedDict(
         (
             ("Documentation", "http://wiki.bitplan.com/index.php/Dblpconf"),
-            ("Code", "https://github.com/WolfgangFahl/dblpconf"),
-            ("Issue tracker", "https://github.com/WolfgangFahl/dblpconf/issues"),
+            ("Code", "https://github.com/WolfgangFahl/dblp"),
+            ("Issue tracker", "https://github.com/WolfgangFahl/dblp/issues"),
         )
       ),
       classifiers=[
@@ -35,7 +35,7 @@ setup(name='dblpconf',
             'Programming Language :: Python :: 3.8',
             'Programming Language :: Python :: 3.9'
       ],
-      packages=['fb4'],
+      packages=['dblp'],
       package_data={
           'templates': ['*.html'],
       },
