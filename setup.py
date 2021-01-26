@@ -16,16 +16,16 @@ setup(name='dblpconf',
       description='dblp conf',
       long_description=long_description,
       long_description_content_type='text/markdown',
-      url='https://github.com/WolfgangFahl/dblp',
-      download_url='https://github.com/WolfgangFahl/dblp',
+      url='https://github.com/WolfgangFahl/dblpconf',
+      download_url='https://github.com/WolfgangFahl/dblpconf',
       author='Wolfgang Fahl',
       author_email='wf@bitplan.com',
       license='Apache',
       project_urls=OrderedDict(
         (
             ("Documentation", "http://wiki.bitplan.com/index.php/Dblpconf"),
-            ("Code", "https://github.com/WolfgangFahl/dblp"),
-            ("Issue tracker", "https://github.com/WolfgangFahl/dblp/issues"),
+            ("Code", "https://github.com/WolfgangFahl/dblpconf"),
+            ("Issue tracker", "https://github.com/WolfgangFahl/dblpconf/issues"),
         )
       ),
       classifiers=[
