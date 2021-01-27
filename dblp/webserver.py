@@ -82,6 +82,13 @@ class WebServer(AppWrap):
         '''
         query="select * from proceedings where conf=?"
         records=self.sqlDB.query(query,(key,))
+        for record in records:
+            if 'ee' in record:
+                record['ee']=Link(record['ee'],record['ee'])
+            if 'url' in record:
+                url="https://dblp.org/%s" % record['url']
+                record['url']=Link(url,record['url'])
+                
         menuList=self.adminMenuList("Home")
         html=render_template("sample.html",title=key,menuList=menuList,dictList=records)
         return html
