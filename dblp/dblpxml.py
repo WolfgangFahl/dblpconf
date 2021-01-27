@@ -169,10 +169,11 @@ class Dblp(object):
         if 'key' in row:
             key=row['key']
             if key.startswith("conf/"):
-                row['conf']=re.sub(r"conf/(.*)/",r"\1",key)
+                conf=re.sub(r"conf/(.*)/.*",r"\1",key)
+                row['conf']=conf
         pass
             
-    def getSqlDB(self,limit=1000000000,progress=100000,sample=None,debug=False,recreate=False,postProcess=None):
+    def getSqlDB(self,limit=1000000000,progress=100000,sample=None,createSample=10000000,debug=False,recreate=False,postProcess=None):
         '''
         get the SQL database or create it from the XML content
         '''
@@ -187,20 +188,21 @@ class Dblp(object):
             dictOfLod=self.asDictOfLod(limit,progress=progress)
             elapsed=time.time()-starttime
             executeMany=True;
-            fixNone=True      
+            fixNone=True    
+            for i, (kind, lod) in enumerate(dictOfLod.items()):
+                if postProcess is not None:
+                    for j,row in enumerate(lod):
+                        postProcess(kind,j,row)
             for i, (kind, lod) in enumerate(dictOfLod.items()):
                 if debug:
                     print ("#%4d %5d: %s" % (i+1,len(lod),kind))
-                entityInfo=sqlDB.createTable(lod[:10000],kind,'key')
+                entityInfo=sqlDB.createTable(lod[:createSample],kind,'key')
                 sqlDB.store(lod,entityInfo,executeMany=executeMany,fixNone=fixNone)
                 for j,row in enumerate(lod):
                     if debug:
                         print ("  %4d: %s" % (j,row)) 
                     if j>sample:
                         break
-                if postProcess is not None:
-                    for j,row in enumerate(lod):
-                        postProcess(kind,j,row)
             if debug:
                 print ("%5.1f s %5d rows/s" % (elapsed,limit/elapsed))
             tableList=sqlDB.getTableList()     
