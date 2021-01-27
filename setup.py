@@ -12,7 +12,7 @@ except:
     long_description = open('../../README.md').read()
 
 setup(name='dblpconf',
-      version='0.0.2',
+      version='0.0.3',
       description='dblp conf',
       long_description=long_description,
       long_description_content_type='text/markdown',

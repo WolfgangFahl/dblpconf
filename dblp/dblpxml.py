@@ -173,17 +173,17 @@ class Dblp(object):
                 row['conf']=conf
         pass
             
-    def getSqlDB(self,limit=1000000000,progress=100000,sample=None,createSample=10000000,debug=False,recreate=False,postProcess=None):
+    def getSqlDB(self,limit=1000000000,progress=100000,sample=None,createSample=10000000,debug=False,recreate=False,postProcess=None,check_same_thread=False):
         '''
         get the SQL database or create it from the XML content
         '''
         dbname="%s/%s" % (self.xmlpath,"dblp.sqlite")
         if (os.path.isfile(dbname)) and not recreate:
-            sqlDB=SQLDB(dbname=dbname,debug=debug,errorDebug=True)
+            sqlDB=SQLDB(dbname=dbname,debug=debug,errorDebug=True,check_same_thread=check_same_thread)
         else:
             if (os.path.isfile(dbname)) and recreate:
                 os.remove(dbname)
-            sqlDB=SQLDB(dbname=dbname,debug=debug,errorDebug=True)
+            sqlDB=SQLDB(dbname=dbname,debug=debug,errorDebug=True,check_same_thread=check_same_thread)
             starttime=time.time()
             dictOfLod=self.asDictOfLod(limit,progress=progress)
             elapsed=time.time()-starttime

@@ -55,6 +55,10 @@ class WebServer(AppWrap):
         def showSample(entity,limit):
             return self.showSample(entity,limit)
         
+        @self.app.route('/series/<series>')
+        def showSeries(series):
+            return self.showSeries(series)
+        
     def initDB(self):
         '''
         initialize the database
@@ -72,6 +76,16 @@ class WebServer(AppWrap):
     def initUsers(self):
         self.loginBluePrint.addUser(self.db,"admin","dblp")
         
+    def showSeries(self,key):
+        '''
+        return the series for the given key
+        '''
+        query="select * from proceedings where conf=?"
+        records=self.sqlDB.query(query,(key,))
+        menuList=self.adminMenuList("Home")
+        html=render_template("sample.html",title=key,menuList=menuList,dictList=records)
+        return html
+        
     def showSample(self,entity,limit):
         
         if not entity in self.tableDict:
@@ -81,6 +95,14 @@ class WebServer(AppWrap):
             samples=self.sqlDB.query("select * from %s limit %d" % (entity,limit))
             html=render_template("sample.html",title=entity,menuList=menuList,dictList=samples)
             return html
+        
+    def basedUrl(self,url):
+        '''
+        add the base url if need be
+        ''' 
+        if url.startswith("/"):
+            url="%s%s" % (self.baseUrl,url)
+        return url
             
     def adminMenuList(self,activeItem:str=None):
         '''
@@ -108,8 +130,7 @@ class WebServer(AppWrap):
             for menuItem in menuList:
                 if menuItem.title==activeItem:
                     menuItem.active=True
-                if menuItem.url.startswith("/"):
-                    menuItem.url="%s%s" % (self.baseUrl,menuItem.url)
+                menuItem.url=self.basedUrl(menuItem.url)
         return menuList
     
     def index(self):
@@ -125,6 +146,7 @@ order by 2 desc"""
         confs=self.sqlDB.query(query)
         for row in confs:
             conf=row['conf']
+            row['series']=Link(self.basedUrl(url_for("showSeries",series=conf)),conf)
             row['conf']=Link("https://dblp.org/db/conf/%s/index.html" %conf,conf)
         html=render_template("sample.html",title="Home", dictList=confs,menuList=menuList)
         return html

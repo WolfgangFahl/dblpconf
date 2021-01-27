@@ -102,6 +102,15 @@ class TestDblp(unittest.TestCase):
         expected=6 if self.mock else 8
         self.assertEqual(expected,len(tableList))
         sqlDB.close()
+        
+    def testParameterizedQuery(self):
+        dblp=self.getDblp()
+        sqlDB=dblp.getSqlDB()
+        query="select * from proceedings where conf=?"
+        records=sqlDB.query(query,('iccv',))
+        if self.debug:
+            print("found %d iccv records" % len(records))
+        self.assertTrue(len(records)>=19)
             
     def testUml(self):
         '''
