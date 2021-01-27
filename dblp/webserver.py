@@ -100,6 +100,10 @@ class WebServer(AppWrap):
         else:
             menuList=self.adminMenuList(entity)
             samples=self.sqlDB.query("select * from %s limit %d" % (entity,limit))
+            for record in samples:
+                if 'url' in record:
+                    url="https://dblp.org/%s" % record['url']
+                    record['url']=Link(url,record['url'])
             html=render_template("sample.html",title=entity,menuList=menuList,dictList=samples)
             return html
         
