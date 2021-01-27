@@ -76,6 +76,13 @@ class WebServer(AppWrap):
     def initUsers(self):
         self.loginBluePrint.addUser(self.db,"admin","dblp")
         
+    def linkRecord(self,record):
+        if 'ee' in record:
+                record['ee']=Link(record['ee'],record['ee'])
+        if 'url' in record:
+            url="https://dblp.org/%s" % record['url']
+            record['url']=Link(url,record['url'])
+        
     def showSeries(self,key):
         '''
         return the series for the given key
@@ -83,11 +90,7 @@ class WebServer(AppWrap):
         query="select * from proceedings where conf=?"
         records=self.sqlDB.query(query,(key,))
         for record in records:
-            if 'ee' in record:
-                record['ee']=Link(record['ee'],record['ee'])
-            if 'url' in record:
-                url="https://dblp.org/%s" % record['url']
-                record['url']=Link(url,record['url'])
+            self.linkRecord(record)
                 
         menuList=self.adminMenuList("Home")
         html=render_template("sample.html",title=key,menuList=menuList,dictList=records)
@@ -101,9 +104,7 @@ class WebServer(AppWrap):
             menuList=self.adminMenuList(entity)
             samples=self.sqlDB.query("select * from %s limit %d" % (entity,limit))
             for record in samples:
-                if 'url' in record:
-                    url="https://dblp.org/%s" % record['url']
-                    record['url']=Link(url,record['url'])
+                self.linkRecord(record)
             html=render_template("sample.html",title=entity,menuList=menuList,dictList=samples)
             return html
         
