@@ -78,10 +78,18 @@ class WebServer(AppWrap):
         
     def linkRecord(self,record):
         if 'ee' in record:
+            ee=record['ee']
+            if ee is None:
+                record['ee']=''
+            else:
                 record['ee']=Link(record['ee'],record['ee'])
         if 'url' in record:
-            url="https://dblp.org/%s" % record['url']
-            record['url']=Link(url,record['url'])
+            url=record['url']
+            if url is None:
+                record['url']=''
+            else:
+                lurl="https://dblp.org/%s" % url
+                record['url']=Link(lurl,url)
         
     def showSeries(self,key):
         '''
