@@ -65,10 +65,20 @@ class Dblp(object):
         xmlstr = minidom.parseString(etree.tostring(tree.getroot())).toprettyxml(indent=indent)
         return xmlstr
     
-    def createSample(self,keyPrefix="conf/",entityLimit=1000,entities=8,progress:int=500000):
+    def createSample(self,keyEntities=None,keyPrefix="conf/",entityLimit=1000,entities=None,progress:int=500000):
         '''
         create a sample with the given entityLimit
+        
+        Args:
+            keyPrefix(str): the keyPrefix to filter for
         '''
+        if entities is None:
+            entities=['article','book','incollection','www']
+        if keyEntities is None:
+            keyEntities=['proceedings','inproceedings']
+        allEntities=[]
+        allEntities.extend(entities)
+        allEntities.extend(keyEntities)
         root = etree.Element('dblp')
         counter=Counter()
         level=0
@@ -83,18 +93,25 @@ class Dblp(object):
             if event == 'start': 
                 level += 1;
                 if level==2:
-                    counter[element.tag]+=1
-                    doadd=counter[element.tag]<=entityLimit
-                    if 'key' in element.attrib:
-                        key=element.attrib['key']
-                        if key.startswith(keyPrefix):
-                            doadd=True
-                    if (doadd):
+                    doadd=element.tag in entities
+                    if element.tag in keyEntities:
+                        if 'key' in element.attrib:
+                            key=element.attrib['key']
+                            if key.startswith(keyPrefix):
+                                doadd=True
+                    if (doadd and counter[element.tag]<entityLimit):
                         node=etree.fromstring(etree.tostring(element))
                         root.append(node)
+                        counter[element.tag]+=1
                     else:
                         keys=counter.keys()
-                        if len(keys)>=entities:
+                        done=True
+                        for entity in allEntities:
+                            if not entity in keys:
+                                done=False
+                            else:
+                                done=done and counter[entity]>=entityLimit
+                        if done:
                             break
                         
                 pass
@@ -145,7 +162,17 @@ class Dblp(object):
         while element.getprevious() is not None:
             del element.getparent()[0]
             
-    def getSqlDB(self,limit=1000000000,progress=100000,sample=None,debug=False,recreate=False):
+    def postProcess(self,kind,index,row):
+        '''
+        postProcess the given row
+        '''
+        if 'key' in row:
+            key=row['key']
+            if key.startswith("conf/"):
+                row['conf']=re.sub(r"conf/(.*)/",r"\1",key)
+        pass
+            
+    def getSqlDB(self,limit=1000000000,progress=100000,sample=None,debug=False,recreate=False,postProcess=None):
         '''
         get the SQL database or create it from the XML content
         '''
@@ -164,18 +191,16 @@ class Dblp(object):
             for i, (kind, lod) in enumerate(dictOfLod.items()):
                 if debug:
                     print ("#%4d %5d: %s" % (i+1,len(lod),kind))
-                entityInfo=sqlDB.createTable(lod[:100],kind,'key')
+                entityInfo=sqlDB.createTable(lod[:10000],kind,'key')
                 sqlDB.store(lod,entityInfo,executeMany=executeMany,fixNone=fixNone)
                 for j,row in enumerate(lod):
-                    if 'key' in row:
-                        key=row['key']
-                        if key.startswith("conf/"):
-                            row['conf']=re.sub(r"conf/(.*)/",r"\1")
-                            pass
                     if debug:
                         print ("  %4d: %s" % (j,row)) 
                     if j>sample:
                         break
+                if postProcess is not None:
+                    for j,row in enumerate(lod):
+                        postProcess(kind,j,row)
             if debug:
                 print ("%5.1f s %5d rows/s" % (elapsed,limit/elapsed))
             tableList=sqlDB.getTableList()     

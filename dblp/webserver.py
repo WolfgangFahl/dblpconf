@@ -8,7 +8,7 @@ from fb4.login_bp import LoginBluePrint
 from flask_login import current_user, login_user,logout_user, login_required
 from flask import send_file,abort
 from fb4.widgets import Link, Icon, Image, MenuItem
-from flask import render_template
+from flask import render_template, url_for
 from wikibot.wikiuser import WikiUser
 from fb4.sqldb import db
 from dblp.dblpxml import Dblp
@@ -91,7 +91,7 @@ class WebServer(AppWrap):
             list: the list of menu items
         '''
         menuList=[
-            MenuItem('/','Home'),
+            MenuItem(url_for('index'),'Home'),
             MenuItem('http://wiki.bitplan.com/index.php/Dblpconf','Docs'),
             MenuItem('https://github.com/WolfgangFahl/dblpconf','github'),
             ]
@@ -100,7 +100,7 @@ class WebServer(AppWrap):
         else:
             menuList.append(MenuItem('/logout','logout'))
         for entity in self.tableDict.keys():
-            url='/sample/%s/1000' % entity
+            url=url_for('showSample',entity=entity,limit=1000)
             title="%s" %entity
             menuList.append(MenuItem(url,title))
         

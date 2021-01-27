@@ -54,16 +54,15 @@ class TestDblp(unittest.TestCase):
         '''
         test creating a sample file
         '''
-        return
-        self.mock=False
+        #self.mock=False
         dblp=self.getDblp()
         sampletree=dblp.createSample()
         records=len(sampletree.getroot().getchildren())
-        #if self.debug:
-        print("sample has %d records" % records)
-        xmlstr = dblp.prettyXml(sampletree)
+        if self.debug:
+            print("sample has %d records" % records)
         samplefile="/tmp/dblpsample.xml"
-        print(xmlstr,  file=open(samplefile, 'w'))
+        with open(samplefile,'wb') as f:
+            sampletree.write(f,encoding='UTF-8')
                
     
     def testDblpXmlParser(self):
@@ -97,9 +96,9 @@ class TestDblp(unittest.TestCase):
         limit=10000 if self.mock else 10000000
         progress=1000 if self.mock else 100000
         sample=5
-        sqlDB=dblp.getSqlDB(limit, progress, sample, debug=self.debug,recreate=self.mock)
+        sqlDB=dblp.getSqlDB(limit, progress, sample, debug=self.debug,recreate=self.mock,postProcess=dblp.postProcess)
         tableList=sqlDB.getTableList()
-        expected=7 if self.mock else 8
+        expected=6 if self.mock else 8
         self.assertEqual(expected,len(tableList))
         sqlDB.close()
             
@@ -138,7 +137,7 @@ see also [[https://github.com/WolfgangFahl/dblpconf dblp conf open source projec
             countResult=sqlDB.query(countQuery)
             table['instances']=countResult[0]['count']
         plantUml=uml.mergeSchema(schemaManager,tableList,title=title,packageName='dblp',generalizeTo="Record")
-        show=False
+        show=True
         if show:
             print(plantUml.replace('#/','#'))
         self.assertTrue("Record <|-- article" in plantUml)
