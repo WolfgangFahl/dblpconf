@@ -97,7 +97,7 @@ class TestDblp(unittest.TestCase):
         limit=10000 if self.mock else 10000000
         progress=1000 if self.mock else 100000
         sample=5
-        sqlDB=dblp.getSqlDB(limit, progress, sample=sample, debug=self.debug,recreate=recreate,postProcess=dblp.postProcess)
+        sqlDB=dblp.getSqlDB(limit, progress=progress, sample=sample, debug=self.debug,recreate=recreate,postProcess=dblp.postProcess)
         tableList=sqlDB.getTableList()
         expected=6 if self.mock else 8
         self.assertEqual(expected,len(tableList))

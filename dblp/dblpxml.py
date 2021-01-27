@@ -178,6 +178,8 @@ class Dblp(object):
         get the SQL database or create it from the XML content
         '''
         dbname="%s/%s" % (self.xmlpath,"dblp.sqlite")
+        if sample is None:
+            sample=5
         if (os.path.isfile(dbname)) and not recreate:
             sqlDB=SQLDB(dbname=dbname,debug=debug,errorDebug=True,check_same_thread=check_same_thread)
         else:
