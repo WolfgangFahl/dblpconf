@@ -113,8 +113,20 @@ class WebServer(AppWrap):
         return menuList
     
     def index(self):
+        '''
+        show a conference overview
+        '''
         menuList=self.adminMenuList("Home")
-        html=render_template("index.html",title="Home", menuList=menuList)
+        query="""select conf,count(*) as count,min(year) as minYear,max(year) as maxYear
+from proceedings 
+where conf is not null
+group by conf
+order by 2 desc"""
+        confs=self.sqlDB.query(query)
+        for row in confs:
+            conf=row['conf']
+            row['conf']=Link("https://dblp.org/db/conf/%s/index.html" %conf,conf)
+        html=render_template("sample.html",title="Home", dictList=confs,menuList=menuList)
         return html
 
 if __name__ == '__main__':

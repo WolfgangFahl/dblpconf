@@ -91,7 +91,7 @@ class TestDblp(unittest.TestCase):
         '''
         get  dict of list of dicts (tables)
         '''
-        self.mock=True
+        self.mock=False
         recreate=True
         dblp=self.getDblp()
         limit=10000 if self.mock else 10000000
@@ -138,7 +138,7 @@ see also [[https://github.com/WolfgangFahl/dblpconf dblp conf open source projec
             countResult=sqlDB.query(countQuery)
             table['instances']=countResult[0]['count']
         plantUml=uml.mergeSchema(schemaManager,tableList,title=title,packageName='dblp',generalizeTo="Record")
-        show=False
+        show=True
         if show:
             print(plantUml.replace('#/','#'))
         self.assertTrue("Record <|-- article" in plantUml)
