@@ -22,7 +22,7 @@ class Dblp(object):
     see https://github.com/IsaacChanghau/DBLPParser/blob/master/src/dblp_parser.py
     '''
 
-    def __init__(self,xmlname:str="dblp.xml",dtd_validation:bool=False,xmlpath:str=None,gzurl:str="https://dblp.uni-trier.de/xml/dblp.xml.gz"):
+    def __init__(self,xmlname:str="dblp.xml",dtd_validation:bool=False,xmlpath:str=None,gzurl:str="https://dblp.uni-trier.de/xml/dblp.xml.gz",debug=False):
         '''
         Constructor
         
@@ -32,6 +32,7 @@ class Dblp(object):
             xmlpath(str): download path
             gzurl(str): url of the gzipped original file
         '''
+        self.debug=debug
         if xmlpath is None:
             home = str(Path.home())
             xmlpath="%s/.dblp" % home
@@ -132,6 +133,8 @@ class Dblp(object):
         '''
         if not os.path.isfile(self.xmlfile) or reload:
             os.makedirs(self.xmlpath,exist_ok=True)
+            if self.debug:
+                print("downloading %s from %s" % (self.xmlpath, self.gzurl))
             urlreq = urllib.request.urlopen(self.gzurl)
             z = GzipFile(fileobj=BytesIO(urlreq.read()), mode='rb')
             with open(self.xmlfile, 'wb') as outfile:

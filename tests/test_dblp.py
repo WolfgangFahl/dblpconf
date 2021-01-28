@@ -34,7 +34,7 @@ class TestDblp(unittest.TestCase):
     
     @staticmethod
     def getMockedDblp(mock=True,debug=False):
-        dblp=Dblp()
+        dblp=Dblp(debug=debug)
         if mock:
             dblp.xmlpath="/tmp/dblp"
             dblp.gzurl="http://wiki.bitplan.com/images/confident/dblp.xml.gz"

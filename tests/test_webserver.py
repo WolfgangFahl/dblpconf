@@ -41,7 +41,6 @@ class TestWebServer(unittest.TestCase):
         self.assertTrue("<th> publtype </th>" in html)
         pass
 
-
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
