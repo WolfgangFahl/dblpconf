@@ -13,7 +13,7 @@ class TestWebServer(unittest.TestCase):
         '''
         test the webserver
         ''' 
-        self.debug=False
+        self.debug=True
         mock=True
         _,dblp=TestDblp.getMockedDblp(mock, debug=self.debug)
         web=WebServer(dblp)
