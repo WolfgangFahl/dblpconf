@@ -8,6 +8,8 @@ from dblp.dblpxml import Dblp
 from lodstorage.schema import SchemaManager
 from datetime import datetime
 import time
+import logging
+import sys
 from lodstorage.sql import SQLDB
 from lodstorage.uml import UML
 
@@ -18,11 +20,17 @@ class TestDblp(unittest.TestCase):
 
     def setUp(self):
         self.debug=False
+        logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+        self.log=logging.getLogger("TestDblp")
         self.mock=True
         pass
 
     def tearDown(self):
         pass
+    
+    def log(self,msg):
+        if self.debug:
+            self.log.debug(msg)
     
     @staticmethod
     def getMockedDblp(mock=True,debug=False):
@@ -68,8 +76,7 @@ class TestDblp(unittest.TestCase):
         dblp=self.getDblp()
         sampletree=dblp.createSample()
         records=len(sampletree.getroot().getchildren())
-        if self.debug:
-            print("sample has %d records" % records)
+        self.log("sample has %d records" % records)
         samplefile="/tmp/dblpsample.xml"
         with open(samplefile,'wb') as f:
             sampletree.write(f,encoding='UTF-8')
@@ -125,8 +132,7 @@ class TestDblp(unittest.TestCase):
         self.checkConfColumn(sqlDB)
         query="select * from proceedings where conf=?"
         records=sqlDB.query(query,('iccv',))
-        if self.debug:
-            print("found %d iccv records" % len(records))
+        self.log("found %d iccv records" % len(records))
         self.assertTrue(len(records)>=19)
             
     def testUml(self):
