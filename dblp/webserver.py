@@ -70,8 +70,8 @@ class WebServer(AppWrap):
         self.initUsers()
         if self.dblp is None:
             self.dblp=Dblp()
-            self.sqlDB=self.dblp.getXmlSqlDB()
-            self.tableDict=self.sqlDB.getTableDict()
+        self.sqlDB=self.dblp.getXmlSqlDB()
+        self.tableDict=self.sqlDB.getTableDict()
         
     
     def initUsers(self):
