@@ -9,6 +9,9 @@ dblp conferences
 [![GitHub closed issues](https://img.shields.io/github/issues-closed/WolfgangFahl/dblpconf.svg)](https://github.com/WolfgangFahl/dblpconf/issues/?q=is%3Aissue+is%3Aclosed)
 [![License](https://img.shields.io/github/license/WolfgangFahl/dblpconf.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 
+## Demo
+[Demo at RWTH Aachen dbis/i5](https://confident.dbis.rwth-aachen.de/dblpconf/)
+
 ## Documentation
 [Wiki](http://wiki.bitplan.com/index.php/Dblpconf)
 
