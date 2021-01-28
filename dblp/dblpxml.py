@@ -121,20 +121,22 @@ class Dblp(object):
         sampleTree=etree.ElementTree(root) 
         return sampleTree
         
-    def getXmlFile(self):
+    def getXmlFile(self,reload=False):
         '''
         get the dblp xml file - will download the file if it doesn't exist
         
+        Args:
+            reload(bool): if True force download
         Returns:
             str: the xmlfile
         '''
-        if not os.path.isfile(self.xmlfile):
+        if not os.path.isfile(self.xmlfile) or reload:
             os.makedirs(self.xmlpath,exist_ok=True)
             urlreq = urllib.request.urlopen(self.gzurl)
             z = GzipFile(fileobj=BytesIO(urlreq.read()), mode='rb')
             with open(self.xmlfile, 'wb') as outfile:
                 outfile.write(z.read())
-        if not os.path.isfile(self.dtdfile):
+        if not os.path.isfile(self.dtdfile) or reload:
             dtdurl=self.gzurl.replace(".xml.gz",".dtd")
             urllib.request.urlretrieve (dtdurl, self.dtdfile)
         

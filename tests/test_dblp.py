@@ -5,14 +5,11 @@ Created on 2021-01-25
 '''
 import unittest
 from dblp.dblpxml import Dblp
-from lodstorage.schema import SchemaManager,Schema
-import os
+from lodstorage.schema import SchemaManager
+from datetime import datetime
 import time
 from lodstorage.sql import SQLDB
 from lodstorage.uml import UML
-from datetime import datetime
-import re
-from lxml import etree
 
 class TestDblp(unittest.TestCase):
     '''
@@ -41,6 +38,14 @@ class TestDblp(unittest.TestCase):
             print("dblp xml file is %s " % self.xmlfile)
         return dblp
     
+    def getSqlDB(self,recreate=False):
+        dblp=self.getDblp()
+        limit=10000 if self.mock else 10000000
+        progress=1000 if self.mock else 100000
+        sample=5
+        sqlDB=dblp.getSqlDB(limit, progress=progress, sample=sample, debug=self.debug,recreate=recreate,postProcess=dblp.postProcess)
+        return sqlDB
+    
     def testDblpDownload(self):
         '''
         test dblp access
@@ -63,7 +68,6 @@ class TestDblp(unittest.TestCase):
         samplefile="/tmp/dblpsample.xml"
         with open(samplefile,'wb') as f:
             sampletree.write(f,encoding='UTF-8')
-               
     
     def testDblpXmlParser(self):
         '''
@@ -87,20 +91,23 @@ class TestDblp(unittest.TestCase):
         expectedIndex=35000 if self.mock else 70000000
         self.assertTrue(index>expectedIndex)
         
+    def checkConfColumn(self,sqlDB):
+        tableDict=sqlDB.getTableDict()
+        self.assertTrue("proceedings in tableDict")
+        proceedingsTable=tableDict["proceedings"]
+        pcols=proceedingsTable["columns"]
+        self.assertTrue("conf" in pcols)
+        
+        
     def testSqlLiteDatabaseCreation(self):
         '''
         get  dict of list of dicts (tables)
         '''
-        self.mock=True
-        recreate=True
-        dblp=self.getDblp()
-        limit=10000 if self.mock else 10000000
-        progress=1000 if self.mock else 100000
-        sample=5
-        sqlDB=dblp.getSqlDB(limit, progress=progress, sample=sample, debug=self.debug,recreate=recreate,postProcess=dblp.postProcess)
+        sqlDB=self.getSqlDB(recreate=True)
         tableList=sqlDB.getTableList()
         expected=6 if self.mock else 8
         self.assertEqual(expected,len(tableList))
+        self.checkConfColumn(sqlDB)
         sqlDB.close()
         
     def testParameterizedQuery(self):
@@ -108,12 +115,9 @@ class TestDblp(unittest.TestCase):
         test the parameterized query
         '''
         dblp=self.getDblp()
-        sqlDB=dblp.getSqlDB()
-        tableDict=sqlDB.getTableDict()
-        self.assertTrue("proceedings in tableDict")
-        proceedingsTable=tableDict["proceedings"]
-        pcols=proceedingsTable["columns"]
-        self.assertTrue("conf" in pcols)
+        dblp.getXmlFile(reload=True)
+        sqlDB=self.getSqlDB(recreate=self.mock)
+        self.checkConfColumn(sqlDB)
         query="select * from proceedings where conf=?"
         records=sqlDB.query(query,('iccv',))
         if self.debug:
