@@ -68,10 +68,8 @@ class WebServer(AppWrap):
         self.initUsers()
         dblp=Dblp()
         self.sqlDB=dblp.getSqlDB(debug=self.debug)
-        self.tableList=self.sqlDB.getTableList()
-        self.tableDict={}
-        for table in self.tableList:
-            self.tableDict[table['name']]=table
+        self.tableDict=self.sqlDB.getTableDict()
+        
     
     def initUsers(self):
         self.loginBluePrint.addUser(self.db,"admin","dblp")

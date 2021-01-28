@@ -104,8 +104,16 @@ class TestDblp(unittest.TestCase):
         sqlDB.close()
         
     def testParameterizedQuery(self):
+        '''
+        test the parameterized query
+        '''
         dblp=self.getDblp()
         sqlDB=dblp.getSqlDB()
+        tableDict=sqlDB.getTableDict()
+        self.assertTrue("proceedings in tableDict")
+        proceedingsTable=tableDict["proceedings"]
+        pcols=proceedingsTable["columns"]
+        self.assertTrue("conf" in pcols)
         query="select * from proceedings where conf=?"
         records=sqlDB.query(query,('iccv',))
         if self.debug:

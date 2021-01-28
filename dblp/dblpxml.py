@@ -198,7 +198,7 @@ class Dblp(object):
             for i, (kind, lod) in enumerate(dictOfLod.items()):
                 if debug:
                     print ("#%4d %5d: %s" % (i+1,len(lod),kind))
-                entityInfo=sqlDB.createTable(lod,kind,'key',sampleRecordCount=createSample,failIfToFew=False)
+                entityInfo=sqlDB.createTable(lod,kind,'key',sampleRecordCount=createSample,failIfTooFew=False)
                 sqlDB.store(lod,entityInfo,executeMany=executeMany,fixNone=fixNone)
                 for j,row in enumerate(lod):
                     if debug:
