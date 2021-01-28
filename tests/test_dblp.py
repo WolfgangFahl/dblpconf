@@ -24,18 +24,23 @@ class TestDblp(unittest.TestCase):
     def tearDown(self):
         pass
     
+    @staticmethod
+    def getMockedDblp(mock=True,debug=False):
+        dblp=Dblp()
+        if mock:
+            dblp.xmlpath="/tmp/dblp"
+            dblp.gzurl="http://wiki.bitplan.com/images/confident/dblp.xml.gz"
+            dblp.reinit()
+        xmlfile=dblp.getXmlFile()
+        if debug:
+            print("dblp xml file is %s " % xmlfile)
+        return xmlfile,dblp
+        
     def getDblp(self):
         '''
         get the dblp xml file
         '''
-        dblp=Dblp()
-        if self.mock:
-            dblp.xmlpath="/tmp/dblp"
-            dblp.gzurl="http://wiki.bitplan.com/images/confident/dblp.xml.gz"
-            dblp.reinit()
-        self.xmlfile=dblp.getXmlFile()
-        if self.debug:
-            print("dblp xml file is %s " % self.xmlfile)
+        self.xmlfile,dblp=self.getMockedDblp(self.mock)
         return dblp
     
     def getSqlDB(self,recreate=False):

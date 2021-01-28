@@ -5,13 +5,18 @@ Created on 2021-01-26
 '''
 import unittest
 from dblp.webserver import WebServer
-
+from tests.test_dblp import TestDblp
 
 class TestWebServer(unittest.TestCase):
 
     def setUp(self):
+        '''
+        test the webserver
+        ''' 
         self.debug=False
-        web=WebServer()
+        mock=True
+        _,dblp=TestDblp.getMockedDblp(mock, debug=self.debug)
+        web=WebServer(dblp)
         app=web.app
         app.config['TESTING'] = True
         app.config['WTF_CSRF_ENABLED'] = False

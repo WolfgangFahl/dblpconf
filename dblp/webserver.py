@@ -19,7 +19,7 @@ class WebServer(AppWrap):
     dblp conf webserver
     '''
     
-    def __init__(self, host='0.0.0.0', port=8252, debug=False):
+    def __init__(self, host='0.0.0.0', port=8252, debug=False,dblp=None):
         '''
         constructor
         
@@ -28,8 +28,10 @@ class WebServer(AppWrap):
             host(str): flask host
             port(int): the port to use for http connections
             debug(bool): True if debugging should be switched on
+            dblp(Dblp): preconfigured dblp access (e.g. for mock testing)
         '''
         self.debug=debug
+        self.dblp=dblp
         scriptdir = os.path.dirname(os.path.abspath(__file__))
         template_folder=scriptdir + '/../templates'
         super().__init__(host=host,port=port,debug=debug,template_folder=template_folder)
@@ -66,9 +68,10 @@ class WebServer(AppWrap):
         self.db.drop_all()
         self.db.create_all()
         self.initUsers()
-        dblp=Dblp()
-        self.sqlDB=dblp.getXmlSqlDB()
-        self.tableDict=self.sqlDB.getTableDict()
+        if self.dblp is None:
+            self.dblp=Dblp()
+            self.sqlDB=self.dblp.getXmlSqlDB()
+            self.tableDict=self.sqlDB.getTableDict()
         
     
     def initUsers(self):
