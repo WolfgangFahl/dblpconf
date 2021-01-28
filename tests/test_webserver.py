@@ -5,7 +5,7 @@ Created on 2021-01-26
 '''
 import unittest
 from dblp.webserver import WebServer
-from tests.test_dblp import TestDblp
+import tests.test_dblp
 
 class TestWebServer(unittest.TestCase):
 
@@ -15,7 +15,7 @@ class TestWebServer(unittest.TestCase):
         ''' 
         self.debug=True
         mock=True
-        _,dblp=TestDblp.getMockedDblp(mock, debug=self.debug)
+        _,dblp=tests.test_dblp.TestDblp.getMockedDblp(mock, debug=self.debug) 
         web=WebServer(dblp)
         app=web.app
         app.config['TESTING'] = True

@@ -48,7 +48,12 @@ class Dblp(object):
         '''
         self.xmlfile="%s/%s" % (self.xmlpath,self.xmlname)
         self.dtdfile="%s/%s" % (self.xmlpath,self.xmlname.replace(".xml",".dtd"))
-        
+     
+    def getSize(self):
+        stats=os.stat(self.xmlfile)
+        size=stats.st_size
+        return size
+           
     def isDownloaded(self,minsize:int=3000000000)->bool:
         '''
         check that the dblp file is downloaded
@@ -58,8 +63,7 @@ class Dblp(object):
         '''
         result=os.path.isfile(self.xmlfile)
         if result:
-            stats=os.stat(self.xmlfile)
-            result=stats.st_size>=minsize
+            result=self.getSize()>=minsize
         return result
     
     def prettyXml(self,tree,indent='  '):
@@ -154,6 +158,8 @@ class Dblp(object):
         if not os.path.isfile(self.xmlfile):
             raise ("dblp xml file %s not downloaded yet - please call getXmlFile first")
         # with dtd validation
+        if self.debug:
+            print("starting parser for %s " % self.xmlfile)
         return etree.iterparse(source=self.xmlfile, events=('end', 'start' ), dtd_validation=self.dtd_validation, load_dtd=True)  
     
     def clear_element(self,element):

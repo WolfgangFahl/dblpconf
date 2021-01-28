@@ -41,14 +41,14 @@ class TestDblp(unittest.TestCase):
             dblp.reinit()
         xmlfile=dblp.getXmlFile()
         if debug:
-            print("dblp xml file is %s " % xmlfile)
+            print("dblp xml file is  %s with size %5.1f MB" % (xmlfile,dblp.getSize()/1024/1024))
         return xmlfile,dblp
         
     def getDblp(self):
         '''
         get the dblp xml file
         '''
-        self.xmlfile,dblp=self.getMockedDblp(self.mock)
+        self.xmlfile,dblp=self.getMockedDblp(self.mock,debug=self.debug)
         return dblp
     
     def getSqlDB(self,recreate=False):
