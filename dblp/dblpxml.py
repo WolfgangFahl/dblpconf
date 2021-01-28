@@ -174,6 +174,11 @@ class Dblp(object):
                 conf=re.sub(r"conf/(.*)/.*",r"\1",key)
                 row['conf']=conf
         pass
+    
+    def getXmlSqlDB(self,reload=False):
+        self.getXmlFile(reload=reload)
+        return self.getSqlDB(postProcess=self.postProcess)
+        
             
     def getSqlDB(self,limit=1000000000,progress=100000,sample=None,createSample=10000000,debug=False,recreate=False,postProcess=None,check_same_thread=False):
         '''

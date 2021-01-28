@@ -67,7 +67,7 @@ class WebServer(AppWrap):
         self.db.create_all()
         self.initUsers()
         dblp=Dblp()
-        self.sqlDB=dblp.getSqlDB(debug=self.debug)
+        self.sqlDB=dblp.getXmlSqlDB()
         self.tableDict=self.sqlDB.getTableDict()
         
     
