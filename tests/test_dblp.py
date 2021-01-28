@@ -19,9 +19,9 @@ class TestDblp(unittest.TestCase):
     '''
 
     def setUp(self):
-        self.debug=False
+        self.debug=True
         logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
-        self.log=logging.getLogger("TestDblp")
+        self.logger=logging.getLogger("TestDblp")
         self.mock=True
         pass
 
@@ -30,7 +30,7 @@ class TestDblp(unittest.TestCase):
     
     def log(self,msg):
         if self.debug:
-            self.log.debug(msg)
+            self.logger.debug(msg)
     
     @staticmethod
     def getMockedDblp(mock=True,debug=False):
