@@ -13,6 +13,8 @@ from wikibot.wikiuser import WikiUser
 from fb4.sqldb import db
 from dblp.dblpxml import Dblp
 import os
+from lodstorage.query import QueryManager
+from lodstorage.sparql import SPARQL
 
 class WebServer(AppWrap):
     ''' 
@@ -61,6 +63,10 @@ class WebServer(AppWrap):
         def showSeries(series):
             return self.showSeries(series)
         
+        @self.app.route('/wikidata')
+        def showWikiData():
+            return self.showWikiData()
+        
     def initDB(self):
         '''
         initialize the database
@@ -77,32 +83,75 @@ class WebServer(AppWrap):
     def initUsers(self):
         self.loginBluePrint.addUser(self.db,"admin","dblp")
         
-    def linkRecord(self,record):
-        if 'ee' in record:
-            ee=record['ee']
-            if ee is None:
-                record['ee']=''
+    def linkColumn(self,name,record,formatWith=None):
+        '''
+        replace the column with the given name with a link
+        '''
+        if name in record:
+            value=record[name]
+            if value is None:
+                record[name]=''
             else:
-                record['ee']=Link(record['ee'],record['ee'])
-        if 'url' in record:
-            url=record['url']
-            if url is None:
-                record['url']=''
-            else:
-                lurl="https://dblp.org/%s" % url
-                record['url']=Link(lurl,url)
+                if formatWith is None:
+                    lurl=value
+                else:
+                    lurl=formatWith % value
+                record[name]=Link(lurl,value)
         
+    def linkRecord(self,record):
+        '''
+        link the given record
+        '''
+        self.linkColumn("ee", record)
+        self.linkColumn("url",record,formatWith="https://dblp.org/%s")
+        if 'conf' in record:
+            conf=record['conf']
+            value=Link(self.basedUrl(url_for("showSeries",series=conf)),conf) if conf is not None else ""
+            record['conf']=value
+         
     def showSeries(self,key):
         '''
         return the series for the given key
         '''
-        query="select * from proceedings where conf=?"
+        query="select * from proceedings where conf=? order by year desc"
         records=self.sqlDB.query(query,(key,))
         for record in records:
             self.linkRecord(record)
                 
         menuList=self.adminMenuList("Home")
         html=render_template("sample.html",title=key,menuList=menuList,dictList=records)
+        return html
+    
+    def showWikiData(self):
+        '''
+        show the list of wikidata entries
+        '''
+        path="%s/../queries" % os.path.dirname(__file__)
+        qm=QueryManager(lang='sparql',debug=False,path=path)
+        endpoint="https://query.wikidata.org/sparql"
+        sparql=SPARQL(endpoint)
+        query=qm.queriesByName['Wikidata Conference Series']
+        listOfDicts=sparql.queryAsListOfDicts(query.query)
+        rows=[]
+        for row in listOfDicts:
+            row['confSeries']=Link(row['confSeries'],row['acronym'])
+            if 'DBLP_pid' in row:
+                conf=row['DBLP_pid'].replace("conf/","")
+                self.linkColumn('DBLP_pid',row, formatWith="https://dblp.org/db/%s")
+                row['conf']=Link(self.basedUrl(url_for("showSeries",series=conf)),conf)
+            if 'WikiCFP_pid' in row:
+                wikicfp_id=row['WikiCFP_pid']
+                title="wikicfp %s" % wikicfp_id
+                url="http://www.wikicfp.com/cfp/program?id=%s" % wikicfp_id
+                row['WikiCFP_pid']=Link(url,title)
+            self.linkColumn("official_website", row)
+            # workaround https://github.com/WolfgangFahl/pyLoDStorage/issues/20 not
+            # being fixed yet
+            if len(row)==6:
+                rows.append(row)
+                
+        menuList=self.adminMenuList("wikidata")
+        html=render_template("sample.html",title="wikidata",menuList=menuList,dictList=rows)
         return html
         
     def showSample(self,entity,limit):
@@ -138,14 +187,15 @@ class WebServer(AppWrap):
             MenuItem('http://wiki.bitplan.com/index.php/Dblpconf','Docs'),
             MenuItem('https://github.com/WolfgangFahl/dblpconf','github'),
             ]
-        if current_user.is_anonymous:
-            menuList.append(MenuItem('/login','login'))
-        else:
-            menuList.append(MenuItem('/logout','logout'))
         for entity in self.tableDict.keys():
             url=url_for('showSample',entity=entity,limit=1000)
             title="%s" %entity
             menuList.append(MenuItem(url,title))
+        menuList.append(MenuItem(url_for('showWikiData'),"wikidata"))
+        if current_user.is_anonymous:
+            menuList.append(MenuItem('/login','login'))
+        else:
+            menuList.append(MenuItem('/logout','logout'))
         
         if activeItem is not None:
             for menuItem in menuList:
