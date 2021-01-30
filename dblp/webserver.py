@@ -131,27 +131,31 @@ class WebServer(AppWrap):
         endpoint="https://query.wikidata.org/sparql"
         sparql=SPARQL(endpoint)
         query=qm.queriesByName['Wikidata Conference Series']
-        listOfDicts=sparql.queryAsListOfDicts(query.query)
-        rows=[]
+        listOfDicts=sparql.queryAsListOfDicts(query.query,fixNone=True)
         for row in listOfDicts:
             row['confSeries']=Link(row['confSeries'],row['acronym'])
-            if 'DBLP_pid' in row:
-                conf=row['DBLP_pid'].replace("conf/","")
-                self.linkColumn('DBLP_pid',row, formatWith="https://dblp.org/db/%s")
-                row['conf']=Link(self.basedUrl(url_for("showSeries",series=conf)),conf)
+            if 'DBLP_pid':
+                conf=row['DBLP_pid']
+                if conf is None:
+                    row['DBLP_pid']=""
+                    row['conf']=''
+                else:
+                    conf=conf.replace("conf/","")
+                    self.linkColumn('DBLP_pid',row, formatWith="https://dblp.org/db/%s")
+                    row['conf']=Link(self.basedUrl(url_for("showSeries",series=conf)),conf)
             if 'WikiCFP_pid' in row:
                 wikicfp_id=row['WikiCFP_pid']
-                title="wikicfp %s" % wikicfp_id
-                url="http://www.wikicfp.com/cfp/program?id=%s" % wikicfp_id
-                row['WikiCFP_pid']=Link(url,title)
+                if wikicfp_id is None:
+                    row['WikiCFP_pid']=""
+                else:
+                    title="wikicfp %s" % wikicfp_id
+                    url="http://www.wikicfp.com/cfp/program?id=%s" % wikicfp_id
+                    row['WikiCFP_pid']=Link(url,title)
+            self.linkColumn('GND_pid', row, formatWith="https://lobid.org/gnd/%s")
             self.linkColumn("official_website", row)
-            # workaround https://github.com/WolfgangFahl/pyLoDStorage/issues/20 not
-            # being fixed yet
-            if len(row)==6:
-                rows.append(row)
                 
         menuList=self.adminMenuList("wikidata")
-        html=render_template("sample.html",title="wikidata",menuList=menuList,dictList=rows)
+        html=render_template("sample.html",title="wikidata",menuList=menuList,dictList=listOfDicts)
         return html
         
     def showSample(self,entity,limit):

@@ -68,8 +68,9 @@
     {% for dict_item in dictList %}
     <tr>
        <td> {{loop.index}} </td>
-       {% for value in dict_item.values() %}
-       <td>  {{ value|safe }} </td>
+       {% for key in dictList[0] %}
+       {% set value = dict_item[key] -%}
+       <td>  {% if value is not none %}{{ value|safe }} {%endif %} </td>
        {% endfor %}
     </tr>
     {% endfor %}
