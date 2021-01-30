@@ -86,9 +86,7 @@
     <script type="text/javascript">
     $(document).ready(function() {
     	$('.table').DataTable({
-		    buttons: [
-		        'copy', 'excel', 'pdf'
-		    ]
+    		lengthMenu: [[10, 50, 100, 500, 1000, -1 ], [10, 50, 100, 500, 1000, "all"]],
 		});
 	});
     </script>

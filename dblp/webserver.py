@@ -158,10 +158,20 @@ class WebServer(AppWrap):
         html=render_template("sample.html",title="wikidata",menuList=menuList,dictList=listOfDicts)
         return html
         
-    def showSample(self,entity,limit):
+    def showSample(self,entity:str,limit:int):
+        '''
+        Args:
+            entity(str): the name of the entity to show the samples for
+            limit(int): how many elements to show as a sample
         
-        if not entity in self.tableDict:
+        Returns:
+            str: the html code or aborts with a 404 if the entity is invalid or 501 if the limit is above 5000
+        '''
+        
+        if (not entity in self.tableDict):
             abort(404)
+        elif limit>5000:
+            abort(501)
         else:
             menuList=self.adminMenuList(entity)
             samples=self.sqlDB.query("select * from %s limit %d" % (entity,limit))
