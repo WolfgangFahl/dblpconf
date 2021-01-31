@@ -15,6 +15,7 @@ from dblp.dblpxml import Dblp
 import os
 from lodstorage.query import QueryManager
 from lodstorage.sparql import SPARQL
+from wikibot.wikiuser import WikiUser
 
 class WebServer(AppWrap):
     ''' 
@@ -81,7 +82,13 @@ class WebServer(AppWrap):
         
     
     def initUsers(self):
-        self.loginBluePrint.addUser(self.db,"admin","dblp")
+        '''
+        initialize my users
+        '''
+        wusers=WikiUser.getWikiUsers()
+        for userid,wuser in enumerate(wusers.values()):
+            username="%s@%s" % (wuser.user,wuser.wikiId)
+            self.loginBluePrint.addUser(self.db,username,wuser.getPassword(),userid=userid)
         
     def linkColumn(self,name,record,formatWith=None):
         '''
@@ -233,7 +240,7 @@ order by 2 desc"""
             conf=row['conf']
             row['series']=Link(self.basedUrl(url_for("showSeries",series=conf)),conf)
             row['conf']=Link("https://dblp.org/db/conf/%s/index.html" %conf,conf)
-        html=render_template("sample.html",title="Home", dictList=confs,menuList=menuList)
+        html=render_template("sample.html",title="Event Series", dictList=confs,menuList=menuList)
         return html
 
 if __name__ == '__main__':
