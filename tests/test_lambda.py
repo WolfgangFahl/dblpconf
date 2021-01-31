@@ -7,6 +7,9 @@ import unittest
 from wikibot.wikiuser import WikiUser
 from wikibot.wikiclient import WikiClient
 from wikibot.smw import SMWClient
+from lodstorage.query import Query
+from action.lambda_action import Code, LambdaAction
+import tests.test_dblp 
 
 class TestLambda(unittest.TestCase):
     '''
@@ -14,13 +17,13 @@ class TestLambda(unittest.TestCase):
     '''
 
     def setUp(self):
-        self.debug=True
+        self.debug=False
+        self.dblp=tests.test_dblp.TestDblp.getMockedDblp()
         pass
 
 
     def tearDown(self):
         pass
-
 
     def testLambda(self):
         '''
@@ -44,8 +47,18 @@ class TestLambda(unittest.TestCase):
                 result=smw.query(ask)
                 if self.debug:
                     print (len(result))
-                    print (result)  
-                self.assertTrue('WikiDataConferenceSeriesSparqlQuery' in result)
+                    print (result) 
+                qid= 'DblpConfSeriesQuery'
+                self.assertTrue(qid in result)
+                qCode=result[qid]
+                query=Query(name=qCode['id'],query=qCode['text'],lang=qCode['lang'])
+                sid='EchoCode'
+                sCode=result[sid]
+                self.assertTrue(sid in result)
+                code=Code(name=sCode['id'],text=sCode['text'],lang=sCode['lang'])
+                action=LambdaAction("testLambdaAction",query=query,code=code)
+                sqlDB=self.dblp.getSqlDB(postProcess=self.dblp.postProcess)
+                action.execute(sqlDB)
         pass
 
 

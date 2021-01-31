@@ -14,6 +14,7 @@ class TestQueries(unittest.TestCase):
     '''
 
     def setUp(self):
+        self.debug=False
         pass
 
 
@@ -35,12 +36,12 @@ class TestQueries(unittest.TestCase):
             #print(query.query)
             listOfDicts=sparql.queryAsListOfDicts(query.query)
             markup=query.asWikiMarkup(listOfDicts)
-            print("== %s ==" % (name))
-            print("=== query ===")
-            print (query.asWikiSourceMarkup())
-            print("=== result ===")
-            print(markup)
-        pass
+            if self.debug:
+                print("== %s ==" % (name))
+                print("=== query ===")
+                print (query.asWikiSourceMarkup())
+                print("=== result ===")
+                print(markup)
         pass
 
 

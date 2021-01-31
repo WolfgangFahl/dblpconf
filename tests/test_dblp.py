@@ -8,8 +8,7 @@ from dblp.dblpxml import Dblp
 from lodstorage.schema import SchemaManager
 from datetime import datetime
 import time
-import logging
-import sys
+#import logging
 from lodstorage.sql import SQLDB
 from lodstorage.uml import UML
 
@@ -19,9 +18,12 @@ class TestDblp(unittest.TestCase):
     '''
 
     def setUp(self):
-        self.debug=True
-        logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
-        self.logger=logging.getLogger("TestDblp")
+        self.debug=False
+#        if self.debug:
+#            logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
+#        else:
+#            logging.basicConfig(stream=sys.stderr, level=logging.INFO)          
+#        self.logger=logging.getLogger("TestDblp")
         self.mock=True
         pass
 
@@ -30,7 +32,8 @@ class TestDblp(unittest.TestCase):
     
     def log(self,msg):
         if self.debug:
-            self.logger.debug(msg)
+            print(msg)
+            #self.logger.debug(msg)
     
     @staticmethod
     def getMockedDblp(mock=True,debug=False):
@@ -42,13 +45,13 @@ class TestDblp(unittest.TestCase):
         xmlfile=dblp.getXmlFile()
         if debug:
             print("dblp xml file is  %s with size %5.1f MB" % (xmlfile,dblp.getSize()/1024/1024))
-        return xmlfile,dblp
+        return dblp
         
     def getDblp(self):
         '''
-        get the dblp xml file
+        get the dblp 
         '''
-        self.xmlfile,dblp=self.getMockedDblp(self.mock,debug=self.debug)
+        dblp=TestDblp.getMockedDblp(self.mock,debug=self.debug)
         return dblp
     
     def getSqlDB(self,recreate=False):
