@@ -6,6 +6,7 @@ Created on 2021-01-26
 import unittest
 from dblp.webserver import WebServer
 import tests.test_dblp
+import getpass
 
 class TestWebServer(unittest.TestCase):
 
@@ -13,6 +14,8 @@ class TestWebServer(unittest.TestCase):
         '''
         test the webserver
         ''' 
+        if getpass.getuser()!="wf":
+            return
         self.debug=False
         mock=True
         dblp=tests.test_dblp.TestDblp.getMockedDblp(mock, debug=self.debug) 
@@ -40,6 +43,8 @@ class TestWebServer(unittest.TestCase):
         '''
         test the samples handling
         '''
+        if getpass.getuser()!="wf":
+            return
         html=self.getResponse("/sample/article/100")
         self.assertTrue("<th> publtype </th>" in html)
         pass
