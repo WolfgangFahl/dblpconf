@@ -5,7 +5,7 @@ Created on 2020-12-30
 '''
 from fb4.app import AppWrap
 from fb4.login_bp import LoginBluePrint
-from flask_login import current_user, login_user,logout_user, login_required
+from flask_login import current_user, login_required
 from flask import send_file,abort
 from fb4.widgets import Link, Icon, Image, MenuItem
 from flask import render_template, url_for
@@ -68,6 +68,11 @@ class WebServer(AppWrap):
         def showWikiData():
             return self.showWikiData()
         
+        @login_required
+        @self.app.route('/lambdactions')
+        def showLambdaActions():
+            return self.showLambdaActions()
+        
     def initDB(self):
         '''
         initialize the database
@@ -80,7 +85,6 @@ class WebServer(AppWrap):
         self.sqlDB=self.dblp.getXmlSqlDB()
         self.tableDict=self.sqlDB.getTableDict()
         
-    
     def initUsers(self):
         '''
         initialize my users
@@ -165,6 +169,17 @@ class WebServer(AppWrap):
         html=render_template("sample.html",title="wikidata",menuList=menuList,dictList=listOfDicts)
         return html
         
+    def showLambdaActions(self):
+        '''
+        show the available lambda Actions
+        '''
+        wusers=WikiUser.getWikiUsers()
+        luser=self.loginBluePrint.getLoggedInUser()
+        for wuser in wusers.values():
+            print (wuser.wikiId)
+            
+        
+             
     def showSample(self,entity:str,limit:int):
         '''
         Args:
@@ -213,6 +228,7 @@ class WebServer(AppWrap):
             title="%s" %entity
             menuList.append(MenuItem(url,title))
         menuList.append(MenuItem(url_for('showWikiData'),"wikidata"))
+        menuList.append(MenuItem(url_for('showLambdaActions'),"actions"))
         if current_user.is_anonymous:
             menuList.append(MenuItem('/login','login'))
         else:
