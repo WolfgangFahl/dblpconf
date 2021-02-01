@@ -16,6 +16,11 @@ import os
 from lodstorage.query import QueryManager
 from lodstorage.sparql import SPARQL
 from wikibot.wikiuser import WikiUser
+from wikibot.wikiclient import WikiClient
+from wikibot.smw import SMW,SMWClient
+from flask_wtf import FlaskForm
+from wtforms import SubmitField
+
 
 class WebServer(AppWrap):
     ''' 
@@ -69,7 +74,7 @@ class WebServer(AppWrap):
             return self.showWikiData()
         
         @login_required
-        @self.app.route('/lambdactions')
+        @self.app.route('/lambdactions',methods=['GET', 'POST'])
         def showLambdaActions():
             return self.showLambdaActions()
         
@@ -85,13 +90,26 @@ class WebServer(AppWrap):
         self.sqlDB=self.dblp.getXmlSqlDB()
         self.tableDict=self.sqlDB.getTableDict()
         
+    def getUserNameForWikiUser(self,wuser:WikiUser)->str:
+        '''
+        get the username for the given wiki user
+        
+        Args:
+            wuser(WikiUser): the user to get the username for
+        
+        Returns:
+            str: a fully qualifying username e.g. testuser@testwiki
+        '''
+        username="%s@%s" % (wuser.user,wuser.wikiId)
+        return username
+        
     def initUsers(self):
         '''
         initialize my users
         '''
         wusers=WikiUser.getWikiUsers()
         for userid,wuser in enumerate(wusers.values()):
-            username="%s@%s" % (wuser.user,wuser.wikiId)
+            username=self.getUserNameForWikiUser(wuser)
             self.loginBluePrint.addUser(self.db,username,wuser.getPassword(),userid=userid)
         
     def linkColumn(self,name,record,formatWith=None):
@@ -168,17 +186,65 @@ class WebServer(AppWrap):
         menuList=self.adminMenuList("wikidata")
         html=render_template("sample.html",title="wikidata",menuList=menuList,dictList=listOfDicts)
         return html
+    
+    def getSMWForLoggedInUser(self):
+        wusers=WikiUser.getWikiUsers()
+        luser=self.loginBluePrint.getLoggedInUser()
+        smw=None
+        wuser=None
+        for wuser in wusers.values():
+            username=self.getUserNameForWikiUser(wuser)
+            if luser.username==username:
+                wikiclient=WikiClient.ofWikiUser(wuser)
+                smw=SMWClient(wikiclient.getSite())
+                break
+        return wuser,smw
         
     def showLambdaActions(self):
         '''
         show the available lambda Actions
         '''
-        wusers=WikiUser.getWikiUsers()
-        luser=self.loginBluePrint.getLoggedInUser()
-        for wuser in wusers.values():
-            print (wuser.wikiId)
-            
+        if not current_user.is_authenticated:
+            abort(404)
+        wuser,smw=self.getSMWForLoggedInUser()
+        if smw is None:
+            abort(404)
+        else:
+            return self.showLambdaActionsForSMW(smw,wuser)
         
+    def showLambdaActionsForSMW(self,smw:SMW,wuser:WikiUser):
+        '''
+        show the lambad Actions for the given Semantic MediaWiki and wiki user
+        
+        Args:
+            smw(SMW): the semantic mediawiki to use
+        '''
+        form = ActionForm()
+        if form.validate_on_submit():
+            print("action execute hit")
+        ask="""{{#ask: [[Concept:Sourcecode]]
+|mainlabel=Sourcecode
+| ?Sourcecode id = id
+| ?Sourcecode lang = lang
+| ?Sourcecode author = author
+| ?Sourcecode since = since
+| ?Sourcecode url = url
+}}"""   
+        listOfDicts=list(smw.query(ask).values())
+        wikiurl=wuser.getWikiUrl()
+        formatWith="%s/index.php/%%s" % wikiurl
+        queryList=[]
+        actionList=[]
+        for row in listOfDicts:
+            self.linkColumn("Sourcecode", row, formatWith)
+            lang=row['lang']
+            if lang=='python':
+                actionList.append(row)
+            else:
+                queryList.append(row)
+        menuList=self.adminMenuList("actions")
+        html=render_template("actions.html",form=form,title="actions",menuList=menuList,queryList=queryList,actionList=actionList)
+        return html
              
     def showSample(self,entity:str,limit:int):
         '''
@@ -228,10 +294,10 @@ class WebServer(AppWrap):
             title="%s" %entity
             menuList.append(MenuItem(url,title))
         menuList.append(MenuItem(url_for('showWikiData'),"wikidata"))
-        menuList.append(MenuItem(url_for('showLambdaActions'),"actions"))
         if current_user.is_anonymous:
             menuList.append(MenuItem('/login','login'))
         else:
+            menuList.append(MenuItem(url_for('showLambdaActions'),"actions"))
             menuList.append(MenuItem('/logout','logout'))
         
         if activeItem is not None:
@@ -259,6 +325,12 @@ order by 2 desc"""
         html=render_template("sample.html",title="Event Series", dictList=confs,menuList=menuList)
         return html
 
+class ActionForm(FlaskForm):
+    '''
+    the action form
+    '''
+    submit = SubmitField("execute")
+    
 if __name__ == '__main__':
     # construct the web application    
     web=WebServer()

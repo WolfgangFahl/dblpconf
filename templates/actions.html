@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% from 'bootstrap/form.html' import render_form %}
+{% import 'macros.html' as macros %}
+{% block content %}
+{% if title is not none %}<h2>{{ title }}</h2>{%endif %}
+{{ render_form(form) }}
+<h3>select a query</h3>
+{{ macros.table4DictList(queryList,'queryTable') }}
+<h3>select an action</h3>
+{{ macros.table4DictList(actionList,'actionTable') }}
+{% endblock %}
+{% block scripts %}
+    {{ super() }}
+    {{ macros.loadDataTable() }}
+     <script type="text/javascript">
+     $(document).ready(function() {
+    	var table=$('.table').DataTable({
+    		select: {
+        		style: 'single'
+    		}
+		});
+		table.on( 'select', function ( e, dt, type, indexes ) {
+			var targetTable=e.target;
+			var rowData = targetTable.rows( indexes ).data();
+			var jsonSelect=JSON.stringify(rowData);
+    		alert(jsonSelect);
+		} );
+	});
+    </script>
+{% endblock %}
