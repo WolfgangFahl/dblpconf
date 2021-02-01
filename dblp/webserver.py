@@ -13,13 +13,14 @@ from wikibot.wikiuser import WikiUser
 from fb4.sqldb import db
 from dblp.dblpxml import Dblp
 import os
+import json
 from lodstorage.query import QueryManager
 from lodstorage.sparql import SPARQL
 from wikibot.wikiuser import WikiUser
 from wikibot.wikiclient import WikiClient
 from wikibot.smw import SMW,SMWClient
 from flask_wtf import FlaskForm
-from wtforms import SubmitField
+from wtforms import HiddenField,SubmitField
 
 
 class WebServer(AppWrap):
@@ -212,6 +213,29 @@ class WebServer(AppWrap):
         else:
             return self.showLambdaActionsForSMW(smw,wuser)
         
+    def getJsonColumn(self,form,field:str,col:int):
+        '''
+        get a column from a record transmitted via json in the given field of the given form at the given column
+        
+        example: 
+        
+        Args:
+            form: the wtform posted
+            field(str): the name of the (hidden) field that contains the json data
+            col(int): the column index to get the data from
+            
+        Returns:
+            str: the column content
+        '''
+        result=None
+        if field in form:
+            jsonText=form.data[field]
+            row = json.loads(jsonText)
+            if isinstance(row,list) and col<len(row):
+                result=row[col]
+                pass
+        return result               
+        
     def showLambdaActionsForSMW(self,smw:SMW,wuser:WikiUser):
         '''
         show the lambad Actions for the given Semantic MediaWiki and wiki user
@@ -220,8 +244,6 @@ class WebServer(AppWrap):
             smw(SMW): the semantic mediawiki to use
         '''
         form = ActionForm()
-        if form.validate_on_submit():
-            print("action execute hit")
         ask="""{{#ask: [[Concept:Sourcecode]]
 |mainlabel=Sourcecode
 | ?Sourcecode id = id
@@ -242,6 +264,10 @@ class WebServer(AppWrap):
                 actionList.append(row)
             else:
                 queryList.append(row)
+        if form.validate_on_submit():
+            aJson=self.getJsonColumn(form,"actionTableSelection",2)
+            qJson=self.getJsonColumn(form,"queryTableSelection",2)
+            print("action execute hit with %s and %s" % (aJson,qJson))
         menuList=self.adminMenuList("actions")
         html=render_template("actions.html",form=form,title="actions",menuList=menuList,queryList=queryList,actionList=actionList)
         return html
@@ -329,6 +355,8 @@ class ActionForm(FlaskForm):
     '''
     the action form
     '''
+    queryTableSelection = HiddenField()
+    actionTableSelection = HiddenField()
     submit = SubmitField("execute")
     
 if __name__ == '__main__':

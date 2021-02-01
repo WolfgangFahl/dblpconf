@@ -20,10 +20,13 @@
     		}
 		});
 		table.on( 'select', function ( e, dt, type, indexes ) {
-			var targetTable=e.target;
-			var rowData = targetTable.rows( indexes ).data();
+			// see https://jsfiddle.net/wf_bitplan_com/Lat09gbz/20/
+			var targetTableId=e.target.id;
+	    	var stable = $('#'+targetTableId).DataTable();
+			var rowData = stable.row( indexes ).data();
 			var jsonSelect=JSON.stringify(rowData);
-    		alert(jsonSelect);
+      		var selector='#'+targetTableId+'Selection';
+   			$(selector).val(jsonSelect);
 		} );
 	});
     </script>
