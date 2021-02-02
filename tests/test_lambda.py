@@ -26,6 +26,7 @@ class TestLambda(unittest.TestCase):
     
     def getSMW(self,wikiId='test',url='http://test.bitplan.com'):
         smw=None
+        wikiclient=None
         wusers=WikiUser.getWikiUsers()
         if 'test' in wusers:
             wuser=wusers['test']
