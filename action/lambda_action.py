@@ -40,6 +40,22 @@ class LambdaAction(object):
         self.query=query
         self.code=code
         
+    def executeQuery(self,context):
+        rows=None
+        if "sqlDB" in context:
+            db=context["sqlDB"]
+            rows=db.query(self.query.query)
+            context["rows"]=rows
+        return rows
+            
+    def getMessage(self,context):
+        message=None
+        if 'result' in context:
+            result=context['result']
+            if 'message' in result:
+                message=result["message"]
+        return message
+        
     def execute(self,context):
         '''
         run my query and feed the result into the given code
@@ -47,10 +63,7 @@ class LambdaAction(object):
         Args:
             context(dict): a dictionary for the exchange of parameters
         '''
-        if "sqlDB" in context:
-            db=context["sqlDB"]
-            rows=db.query(self.query.query)
-            context["rows"]=rows
+        self.executeQuery(context)
         self.code.execute(context)
         
 

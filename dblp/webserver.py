@@ -267,11 +267,9 @@ class WebServer(AppWrap):
             lambdaAction=wikiAction.getLambdaAction("dblpconf-action",queryName,actionName)
             context={"sqlDB": self.sqlDB,"smw":smw}
             lambdaAction.execute(context)
-            if 'result' in context:
-                result=context['result']
-                if 'message' in result:
-                    message=result['message']
-                    flash(message)
+            message=lambdaAction.getMessage(context)
+            if message is not None:
+                flash(message)
                    
         menuList=self.adminMenuList("actions")
         html=render_template("actions.html",form=form,title="actions",menuList=menuList,queryList=queryList,actionList=actionList)
