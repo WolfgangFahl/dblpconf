@@ -5,23 +5,23 @@ Created on 2020-12-30
 '''
 from fb4.app import AppWrap
 from fb4.login_bp import LoginBluePrint
-from flask_login import current_user, login_required
-from flask import send_file,abort
-from fb4.widgets import Link, Icon, Image, MenuItem
-from flask import render_template, url_for
-from wikibot.wikiuser import WikiUser
 from fb4.sqldb import db
-from dblp.dblpxml import Dblp
-import os
-import json
+from fb4.widgets import Link, MenuItem
+from flask import abort,flash,render_template, url_for
+from flask_login import current_user, login_required
+from flask_wtf import FlaskForm
 from lodstorage.query import QueryManager
 from lodstorage.sparql import SPARQL
+from dblp.dblpxml import Dblp
+
+import os
+import json
+
+from action.wikiaction import WikiAction
 from wikibot.wikiuser import WikiUser
 from wikibot.wikiclient import WikiClient
 from wikibot.smw import SMW,SMWClient
-from flask_wtf import FlaskForm
 from wtforms import HiddenField,SubmitField
-
 
 class WebServer(AppWrap):
     ''' 
@@ -234,7 +234,8 @@ class WebServer(AppWrap):
             if isinstance(row,list) and col<len(row):
                 result=row[col]
                 pass
-        return result               
+        return result     
+    
         
     def showLambdaActionsForSMW(self,smw:SMW,wuser:WikiUser):
         '''
@@ -244,20 +245,16 @@ class WebServer(AppWrap):
             smw(SMW): the semantic mediawiki to use
         '''
         form = ActionForm()
-        ask="""{{#ask: [[Concept:Sourcecode]]
-|mainlabel=Sourcecode
-| ?Sourcecode id = id
-| ?Sourcecode lang = lang
-| ?Sourcecode author = author
-| ?Sourcecode since = since
-| ?Sourcecode url = url
-}}"""   
-        listOfDicts=list(smw.query(ask).values())
         wikiurl=wuser.getWikiUrl()
         formatWith="%s/index.php/%%s" % wikiurl
+        wikiAction=WikiAction(smw)
+        sourceCodes=wikiAction.getSourceCodes()
         queryList=[]
         actionList=[]
-        for row in listOfDicts:
+        for orow in list(sourceCodes.values()):
+            # get a copy of the row with the text column removed
+            row=orow.copy()
+            del row['text']
             self.linkColumn("Sourcecode", row, formatWith)
             lang=row['lang']
             if lang=='python':
@@ -265,9 +262,17 @@ class WebServer(AppWrap):
             else:
                 queryList.append(row)
         if form.validate_on_submit():
-            aJson=self.getJsonColumn(form,"actionTableSelection",2)
-            qJson=self.getJsonColumn(form,"queryTableSelection",2)
-            print("action execute hit with %s and %s" % (aJson,qJson))
+            actionName=self.getJsonColumn(form,"actionTableSelection",2)
+            queryName=self.getJsonColumn(form,"queryTableSelection",2)
+            lambdaAction=wikiAction.getLambdaAction("dblpconf-action",queryName,actionName)
+            context={"sqlDB": self.sqlDB,"smw":smw}
+            lambdaAction.execute(context)
+            if 'result' in context:
+                result=context['result']
+                if 'message' in result:
+                    message=result['message']
+                    flash(message)
+                   
         menuList=self.adminMenuList("actions")
         html=render_template("actions.html",form=form,title="actions",menuList=menuList,queryList=queryList,actionList=actionList)
         return html

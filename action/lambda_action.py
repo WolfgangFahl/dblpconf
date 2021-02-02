@@ -18,7 +18,7 @@ class Code(object):
         self.text=text
         self.lang=lang
         
-    def execute(self,x):
+    def execute(self,context):
         '''
         https://stackoverflow.com/questions/701802/how-do-i-execute-a-string-containing-python-code-in-python
         https://stackoverflow.com/questions/436198/what-is-an-alternative-to-execfile-in-python-3
@@ -40,13 +40,17 @@ class LambdaAction(object):
         self.query=query
         self.code=code
         
-    def execute(self,db):
+    def execute(self,context):
         '''
         run my query and feed the result into the given code
+        
+        Args:
+            context(dict): a dictionary for the exchange of parameters
         '''
-        lod=db.query(self.query.query)
-        for row in lod:
-            self.code.execute(str(row))
-        pass
+        if "sqlDB" in context:
+            db=context["sqlDB"]
+            rows=db.query(self.query.query)
+            context["rows"]=rows
+        self.code.execute(context)
         
 

@@ -7,8 +7,7 @@ import unittest
 from wikibot.wikiuser import WikiUser
 from wikibot.wikiclient import WikiClient
 from wikibot.smw import SMWClient
-from lodstorage.query import Query
-from action.lambda_action import Code, LambdaAction
+from action.wikiaction import WikiAction
 import tests.test_dblp 
 
 class TestLambda(unittest.TestCase):
@@ -33,32 +32,21 @@ class TestLambda(unittest.TestCase):
         if 'test' in wusers:
             wuser=wusers['test']
             if wuser.url=="http://test.bitplan.com":
-                ask="""{{#ask: [[Concept:Sourcecode]]
-|mainlabel=Sourcecode
-| ?Sourcecode id = id
-| ?Sourcecode lang = lang
-| ?Sourcecode author = author
-| ?Sourcecode since = since
-| ?Sourcecode text = text
-| ?Sourcecode url = url
-}}"""
                 wikiclient=WikiClient.ofWikiUser(wuser)
                 smw=SMWClient(wikiclient.getSite())
-                result=smw.query(ask)
-                if self.debug:
-                    print (len(result))
-                    print (result) 
-                qid= 'DblpConfSeriesQuery'
-                self.assertTrue(qid in result)
-                qCode=result[qid]
-                query=Query(name=qCode['id'],query=qCode['text'],lang=qCode['lang'])
-                sid='EchoCode'
-                sCode=result[sid]
-                self.assertTrue(sid in result)
-                code=Code(name=sCode['id'],text=sCode['text'],lang=sCode['lang'])
-                action=LambdaAction("testLambdaAction",query=query,code=code)
+                wikiAction=WikiAction(smw)
+                lambdaAction=wikiAction.getLambdaAction('test action','DblpConfSeriesQuery','EchoCode')
                 sqlDB=self.dblp.getSqlDB(postProcess=self.dblp.postProcess)
-                action.execute(sqlDB)
+                context={"sqlDB": sqlDB,"smw":smw}
+                lambdaAction.execute(context=context)
+                self.assertTrue('result' in context)
+                result=context['result']
+                self.assertTrue('message' in result)
+                message=result["message"]
+                self.debug=True
+                if self.debug:
+                    print(message)
+                self.assertTrue("printed" in message)
         pass
 
 
