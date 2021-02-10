@@ -6,13 +6,15 @@ Created on 2020-12-30
 from fb4.app import AppWrap
 from fb4.login_bp import LoginBluePrint
 from fb4.sqldb import db
-from fb4.widgets import Link, MenuItem
+from fb4.widgets import Link, MenuItem,DropDownMenu
 from flask import abort,flash,render_template, url_for
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from lodstorage.query import QueryManager
 from lodstorage.sparql import SPARQL
+from lodstorage.sql import SQLDB
 from dblp.dblpxml import Dblp
+from os.path import expanduser
 
 import os
 import json
@@ -62,9 +64,9 @@ class WebServer(AppWrap):
         def index():
             return self.index()
         
-        @self.app.route('/sample/<entity>/<int:limit>')
-        def showSample(entity,limit):
-            return self.showSample(entity,limit)
+        @self.app.route('/sample/<dbId>/<entity>/<int:limit>')
+        def showSample(dbId,entity,limit):
+            return self.showSample(dbId,entity,limit)
         
         @self.app.route('/series/<series>')
         def showSeries(series):
@@ -79,6 +81,18 @@ class WebServer(AppWrap):
         def showLambdaActions():
             return self.showLambdaActions()
         
+    def getPTPDB(self):
+        '''
+        get the proceedings title parser database 
+        (if available)
+        '''
+        sqlDB=None
+        home = expanduser("~")
+        dbname="%s/.ptp/Event_all.db" % home
+        if os.path.isfile(dbname):
+            sqlDB=SQLDB(dbname=dbname,debug=self.debug,errorDebug=True,check_same_thread=False)
+        return sqlDB
+        
     def initDB(self):
         '''
         initialize the database
@@ -88,8 +102,11 @@ class WebServer(AppWrap):
         self.initUsers()
         if self.dblp is None:
             self.dblp=Dblp()
-        self.sqlDB=self.dblp.getXmlSqlDB()
-        self.tableDict=self.sqlDB.getTableDict()
+        self.dbs={}
+        self.dbs['dblp']=DB(self.dblp.getXmlSqlDB())    
+        ptpDB=self.getPTPDB()
+        if ptpDB is not None:
+            self.dbs['ptp']=DB(ptpDB)
         
     def getUserNameForWikiUser(self,wuser:WikiUser)->str:
         '''
@@ -275,23 +292,26 @@ class WebServer(AppWrap):
         html=render_template("actions.html",form=form,title="actions",menuList=menuList,queryList=queryList,actionList=actionList)
         return html
              
-    def showSample(self,entity:str,limit:int):
+    def showSample(self,dbId:str,entity:str,limit:int):
         '''
         Args:
+            dbId(str): id of the database either 'dblp' or 'ptp'
             entity(str): the name of the entity to show the samples for
             limit(int): how many elements to show as a sample
         
         Returns:
             str: the html code or aborts with a 404 if the entity is invalid or 501 if the limit is above 5000
         '''
-        
-        if (not entity in self.tableDict):
+        if not dbId in self.dbs:
+            abort(404,"unknown dbId %s " % dbId)
+        db=self.dbs[dbId]
+        if (not entity in db.tableDict):
             abort(404)
         elif limit>5000:
             abort(501)
         else:
             menuList=self.adminMenuList(entity)
-            samples=self.sqlDB.query("select * from %s limit %d" % (entity,limit))
+            samples=db.sqlDB.query("select * from %s limit %d" % (entity,limit))
             for record in samples:
                 self.linkRecord(record)
             html=render_template("sample.html",title=entity,menuList=menuList,dictList=samples)
@@ -318,10 +338,15 @@ class WebServer(AppWrap):
             MenuItem('http://wiki.bitplan.com/index.php/Dblpconf','Docs'),
             MenuItem('https://github.com/WolfgangFahl/dblpconf','github'),
             ]
-        for entity in self.tableDict.keys():
-            url=url_for('showSample',entity=entity,limit=1000)
-            title="%s" %entity
-            menuList.append(MenuItem(url,title))
+        for dbId in ["dblp","ptp"]:
+            dropDownMenu=DropDownMenu(dbId)
+            menuList.append(dropDownMenu)
+            db=self.dbs[dbId]
+            for entity in db.tableDict.keys():
+                url=url_for('showSample',dbId=dbId,entity=entity,limit=1000)
+                title="%s" %entity
+                dropDownMenu.addItem(Link(self.basedUrl(url),title))
+            
         menuList.append(MenuItem(url_for('showWikiData'),"wikidata"))
         if current_user.is_anonymous:
             menuList.append(MenuItem('/login','login'))
@@ -331,9 +356,10 @@ class WebServer(AppWrap):
         
         if activeItem is not None:
             for menuItem in menuList:
-                if menuItem.title==activeItem:
-                    menuItem.active=True
-                menuItem.url=self.basedUrl(menuItem.url)
+                if isinstance(menuItem,MenuItem):
+                    if menuItem.title==activeItem:
+                        menuItem.active=True
+                    menuItem.url=self.basedUrl(menuItem.url)
         return menuList
     
     def index(self):
@@ -346,13 +372,24 @@ from proceedings
 where conf is not null
 group by conf
 order by 2 desc"""
-        confs=self.sqlDB.query(query)
+        db=self.dbs['dblp']
+        confs=db.sqlDB.query(query)
         for row in confs:
             conf=row['conf']
             row['series']=Link(self.basedUrl(url_for("showSeries",series=conf)),conf)
             row['conf']=Link("https://dblp.org/db/conf/%s/index.html" %conf,conf)
         html=render_template("sample.html",title="Event Series", dictList=confs,menuList=menuList)
         return html
+    
+class DB:
+    '''
+    Database wrapper with tableDict
+    '''
+    
+    def __init__(self,sqlDB):
+        self.sqlDB=sqlDB
+        self.tableDict=self.sqlDB.getTableDict()
+        pass
 
 class ActionForm(FlaskForm):
     '''

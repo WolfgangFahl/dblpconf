@@ -45,7 +45,7 @@ class TestWebServer(unittest.TestCase):
         '''
         if getpass.getuser()!="wf":
             return
-        html=self.getResponse("/sample/article/100")
+        html=self.getResponse("/sample/dblp/article/100")
         self.assertTrue("<th> publtype </th>" in html)
         pass
 
