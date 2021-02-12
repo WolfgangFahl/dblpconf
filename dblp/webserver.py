@@ -339,13 +339,14 @@ class WebServer(AppWrap):
             MenuItem('https://github.com/WolfgangFahl/dblpconf','github'),
             ]
         for dbId in ["dblp","ptp"]:
-            dropDownMenu=DropDownMenu(dbId)
-            menuList.append(dropDownMenu)
-            db=self.dbs[dbId]
-            for entity in db.tableDict.keys():
-                url=url_for('showSample',dbId=dbId,entity=entity,limit=1000)
-                title="%s" %entity
-                dropDownMenu.addItem(Link(self.basedUrl(url),title))
+            if dbId in self.dbs:
+                dropDownMenu=DropDownMenu(dbId)
+                menuList.append(dropDownMenu)
+                db=self.dbs[dbId]
+                for entity in db.tableDict.keys():
+                    url=url_for('showSample',dbId=dbId,entity=entity,limit=1000)
+                    title="%s" %entity
+                    dropDownMenu.addItem(Link(self.basedUrl(url),title))
             
         menuList.append(MenuItem(url_for('showWikiData'),"wikidata"))
         if current_user.is_anonymous:
