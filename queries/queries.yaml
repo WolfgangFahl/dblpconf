@@ -11,7 +11,7 @@
         PREFIX wd: <http://www.wikidata.org/entity/>
         PREFIX wdt: <http://www.wikidata.org/prop/direct/>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        SELECT ?confSeries ?acronym ?confSeriesLabel ?official_website ?DBLP_pid ?WikiCFP_pid ?FreeBase_pid ?Microsoft_Academic_pid ?Publons_pid ?GND_pid
+        SELECT ?confSeries ?acronym ?confSeriesLabel ?official_website ?DBLP_pid ?WikiCFP_pid ?FreeBase_pid ?Microsoft_Academic_pid ?Publons_pid ?ACM_pid ?GND_pid
         WHERE 
         {
           #  scientific conference series (Q47258130) 
@@ -41,6 +41,10 @@
           # Publons journals/conferences ID 
           optional {
           	?confSeries wdt:P7461 ?Publons_pid.
+          }
+          # ACM conference ID   
+          optional {
+            ?confSeries wdt:P7979 ?ACM_pid.
           }
           # GND pid
           optional {

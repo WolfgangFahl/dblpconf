@@ -130,7 +130,7 @@ class WebServer(AppWrap):
             username=self.getUserNameForWikiUser(wuser)
             self.loginBluePrint.addUser(self.db,username,wuser.getPassword(),userid=userid)
         
-    def linkColumn(self,name,record,formatWith=None):
+    def linkColumn(self,name,record,formatWith=None,formatTitleWith=None):
         '''
         replace the column with the given name with a link
         '''
@@ -143,7 +143,11 @@ class WebServer(AppWrap):
                     lurl=value
                 else:
                     lurl=formatWith % value
-                record[name]=Link(lurl,value)
+                if formatTitleWith is None:
+                    title=value
+                else:
+                    title=formatTitleWith % value
+                record[name]=Link(lurl,title)
         
     def linkRecord(self,record):
         '''
@@ -181,7 +185,7 @@ class WebServer(AppWrap):
         listOfDicts=sparql.queryAsListOfDicts(query.query,fixNone=True)
         for row in listOfDicts:
             row['confSeries']=Link(row['confSeries'],row['acronym'])
-            if 'DBLP_pid':
+            if 'DBLP_pid' in row:
                 conf=row['DBLP_pid']
                 if conf is None:
                     row['DBLP_pid']=""
@@ -190,15 +194,11 @@ class WebServer(AppWrap):
                     conf=conf.replace("conf/","")
                     self.linkColumn('DBLP_pid',row, formatWith="https://dblp.org/db/%s")
                     row['conf']=Link(self.basedUrl(url_for("showSeries",series=conf)),conf)
-            if 'WikiCFP_pid' in row:
-                wikicfp_id=row['WikiCFP_pid']
-                if wikicfp_id is None:
-                    row['WikiCFP_pid']=""
-                else:
-                    title="wikicfp %s" % wikicfp_id
-                    url="http://www.wikicfp.com/cfp/program?id=%s" % wikicfp_id
-                    row['WikiCFP_pid']=Link(url,title)
+            self.linkColumn('WikiCFP_pid',row,formatWith="http://www.wikicfp.com/cfp/program?id=%s",formatTitleWith="wikicfp %s")
             self.linkColumn('GND_pid', row, formatWith="https://lobid.org/gnd/%s")
+            self.linkColumn("Microsoft_Academic_pid",row,formatWith="https://academic.microsoft.com/conference/%s")
+            self.linkColumn("Publons_pid",row,formatWith="https://publons.com/journal/%s")
+            self.linkColumn("FreeBase_pid",row,formatWith="https://freebase.toolforge.org/%s")
             self.linkColumn("official_website", row)
                 
         menuList=self.adminMenuList("wikidata")
@@ -316,14 +316,6 @@ class WebServer(AppWrap):
                 self.linkRecord(record)
             html=render_template("sample.html",title=entity,menuList=menuList,dictList=samples)
             return html
-        
-    def basedUrl(self,url):
-        '''
-        add the base url if need be
-        ''' 
-        if url.startswith("/"):
-            url="%s%s" % (self.baseUrl,url)
-        return url
             
     def adminMenuList(self,activeItem:str=None):
         '''
