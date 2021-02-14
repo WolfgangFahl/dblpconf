@@ -103,7 +103,8 @@ class WebServer(AppWrap):
         if self.dblp is None:
             self.dblp=Dblp()
         self.dbs={}
-        self.dbs['dblp']=DB(self.dblp.getXmlSqlDB())    
+        self.dbs['dblp']=DB(self.dblp.getXmlSqlDB())
+        self.sqlDB=self.dbs['dblp'].sqlDB
         ptpDB=self.getPTPDB()
         if ptpDB is not None:
             self.dbs['ptp']=DB(ptpDB)
@@ -195,10 +196,11 @@ class WebServer(AppWrap):
                     self.linkColumn('DBLP_pid',row, formatWith="https://dblp.org/db/%s")
                     row['conf']=Link(self.basedUrl(url_for("showSeries",series=conf)),conf)
             self.linkColumn('WikiCFP_pid',row,formatWith="http://www.wikicfp.com/cfp/program?id=%s",formatTitleWith="wikicfp %s")
-            self.linkColumn('GND_pid', row, formatWith="https://lobid.org/gnd/%s")
             self.linkColumn("Microsoft_Academic_pid",row,formatWith="https://academic.microsoft.com/conference/%s")
             self.linkColumn("Publons_pid",row,formatWith="https://publons.com/journal/%s")
             self.linkColumn("FreeBase_pid",row,formatWith="https://freebase.toolforge.org/%s")
+            self.linkColumn("ACM_pid",row,formatWith="https://dl.acm.org/conference/%s")
+            self.linkColumn('GND_pid', row, formatWith="https://lobid.org/gnd/%s")
             self.linkColumn("official_website", row)
                 
         menuList=self.adminMenuList("wikidata")
