@@ -23,7 +23,9 @@ from action.wikiaction import WikiAction
 from wikibot.wikiuser import WikiUser
 from wikibot.wikiclient import WikiClient
 from wikibot.smw import SMW,SMWClient
-from wtforms import HiddenField,SubmitField
+from wtforms import HiddenField, SubmitField, StringField, SelectField
+from migration.openresearch.event import EventList, CountryList, Country
+from migration.migrate.toolbox import HelperFunctions as hf
 
 class WebServer(AppWrap):
     ''' 
@@ -75,6 +77,10 @@ class WebServer(AppWrap):
         @self.app.route('/wikidata')
         def showWikiData():
             return self.showWikiData()
+
+        @self.app.route('/openresearch/<entity>',methods=['GET', 'POST'])
+        def showOpenResearchData(entity):
+            return self.showOpenResearchData(entity)
         
         @login_required
         @self.app.route('/lambdactions',methods=['GET', 'POST'])
@@ -206,7 +212,42 @@ class WebServer(AppWrap):
         menuList=self.adminMenuList("wikidata")
         html=render_template("sample.html",title="wikidata",menuList=menuList,dictList=listOfDicts)
         return html
-    
+
+    def showOpenResearchData(self, entity:str):
+        '''
+        show the list of all events available in OPENRESEARCH
+        Args:
+            entiy: Show the data of the given entity. If the entity is not known redirect to home page and show error message
+            limit: Upper limit of the data to be shown
+        '''
+        #Assumption data for entites is always converted to LOD to render it as table
+        limit=100
+        menuList = self.adminMenuList("OpenResearch")
+        if entity == "event":
+            eventList = EventList()
+            wikiUser = hf.WikiUser()
+            lod =  self.getEventsLOD(eventList.events)
+            return render_template('datatable.html',title="wikidata",menuList=menuList, listOfDicts=lod)
+
+        return "Test"
+
+    def getEventsLOD(self, events):
+        lod=[]
+        for event in events.values():
+            eventRecord = event.__dict__
+            acronymLength = None
+            if 'Acronym' in eventRecord:
+                acronymLength = len(eventRecord.get('Acronym'))
+            acronymMarker = "-"
+            if acronymLength > 20:
+                acronymMarker = f"❌ Length:{acronymLength}"
+            else:
+                acronymMarker = "✅"
+            eventRecord['Acronym length'] = acronymMarker
+            lod.append(eventRecord)
+        return lod
+
+
     def getSMWForLoggedInUser(self):
         wusers=WikiUser.getWikiUsers()
         luser=self.loginBluePrint.getLoggedInUser()
@@ -343,6 +384,12 @@ class WebServer(AppWrap):
                     dropDownMenu.addItem(Link(self.basedUrl(url),title))
             
         menuList.append(MenuItem(url_for('showWikiData'),"wikidata"))
+        # Add OPENRESEARCH
+        orDropDownMenu=DropDownMenu('OpenResearch')
+        orDropDownMenu.addItem(Link(url_for('showOpenResearchData', entity="country"), "Countries"))
+        orDropDownMenu.addItem(Link(url_for('showOpenResearchData', entity="event"), "Events"))
+        orDropDownMenu.addItem(Link(url_for('showOpenResearchData', entity="eventseries"), "Event series"))
+        menuList.append(orDropDownMenu)
         if current_user.is_anonymous:
             menuList.append(MenuItem('/login','login'))
         else:
@@ -375,7 +422,6 @@ order by 2 desc"""
             row['conf']=Link("https://dblp.org/db/conf/%s/index.html" %conf,conf)
         html=render_template("sample.html",title="Event Series", dictList=confs,menuList=menuList)
         return html
-    
 class DB:
     '''
     Database wrapper with tableDict
@@ -393,7 +439,7 @@ class ActionForm(FlaskForm):
     queryTableSelection = HiddenField()
     actionTableSelection = HiddenField()
     submit = SubmitField("execute")
-    
+
 if __name__ == '__main__':
     # construct the web application    
     web=WebServer()
