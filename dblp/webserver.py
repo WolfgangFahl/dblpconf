@@ -24,8 +24,8 @@ from wikibot.wikiuser import WikiUser
 from wikibot.wikiclient import WikiClient
 from wikibot.smw import SMW,SMWClient
 from wtforms import HiddenField, SubmitField, StringField, SelectField
-from migration.openresearch.event import EventList,Event,EventSeriesList, CountryList, Country
-from migration.migrate.toolbox import HelperFunctions as hf
+from openresearch.event import EventList,Event,EventSeriesList, CountryList, Country
+from ormigrate.toolbox import HelperFunctions as hf
 
 class WebServer(AppWrap):
     ''' 
