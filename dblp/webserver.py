@@ -24,7 +24,7 @@ from wikibot.wikiuser import WikiUser
 from wikibot.wikiclient import WikiClient
 from wikibot.smw import SMW,SMWClient
 from wtforms import HiddenField, SubmitField, StringField, SelectField
-from migration.openresearch.event import EventList, CountryList, Country
+from migration.openresearch.event import EventList, CountryList, Country, EventSeriesList
 from migration.migrate.toolbox import HelperFunctions as hf
 
 class WebServer(AppWrap):
@@ -229,8 +229,16 @@ class WebServer(AppWrap):
             eventList.fromCache(wikiUser)
             lod =  self.getEventsLOD(eventList.events)
             return render_template('datatable.html',title="wikidata",menuList=menuList, listOfDicts=lod)
-
+        elif entity == "country":
+            lod = Country.getSamples()
+            return render_template('datatable.html', title="wikidata", menuList=menuList, listOfDicts=lod)
+        elif entity == "eventseries":
+            eventseriesList = EventSeriesList()
+            eventseriesList.fromCache(wikiUser)
+            lod = self.getEventSeriesLOD(eventseriesList.eventSeries)
+            return render_template('datatable.html', title="wikidata", menuList=menuList, listOfDicts=lod)
         return "Test"
+
 
     def getEventsLOD(self, events):
         lod=[]
@@ -241,9 +249,16 @@ class WebServer(AppWrap):
             if 'acronym' in eventRecord:
                 acronymLength = len(eventRecord.get('acronym'))
                 acronymMarker = f"❌ Length:{acronymLength}" if acronymLength > 20 else "✅"
-
             eventRecord['acronym length'] = acronymMarker
             lod.append(eventRecord)
+        return lod
+
+    def getEventSeriesLOD(self, eventSeries):
+        lod = []
+        for eventSerie in eventSeries:
+            eventSeriesRecord = eventSerie.__dict__
+            #ToDo Apply changes to the displayed data here
+            lod.append(eventSeriesRecord)
         return lod
 
 
