@@ -24,7 +24,7 @@ from wikibot.wikiuser import WikiUser
 from wikibot.wikiclient import WikiClient
 from wikibot.smw import SMW,SMWClient
 from wtforms import HiddenField, SubmitField, StringField, SelectField
-from migration.openresearch.event import EventList, CountryList, Country
+from migration.openresearch.event import EventList,Event,EventSeriesList, CountryList, Country
 from migration.migrate.toolbox import HelperFunctions as hf
 
 class WebServer(AppWrap):
@@ -224,28 +224,20 @@ class WebServer(AppWrap):
         limit=100
         menuList = self.adminMenuList("OpenResearch")
         wikiUser = hf.getSMW_WikiUser()
+        rating=None
         if entity == "event":
-            eventList = EventList()
-            eventList.fromCache(wikiUser)
-            lod =  self.getEventsLOD(eventList.events)
-            return render_template('datatable.html',title="wikidata",menuList=menuList, listOfDicts=lod)
-
-        return "Test"
-
-    def getEventsLOD(self, events):
-        lod=[]
-        for event in events:
-            eventRecord = event.__dict__
-            acronymLength = None
-            acronymMarker = "-"
-            if 'acronym' in eventRecord:
-                acronymLength = len(eventRecord.get('acronym'))
-                acronymMarker = f"❌ Length:{acronymLength}" if acronymLength > 20 else "✅"
-
-            eventRecord['acronym length'] = acronymMarker
-            lod.append(eventRecord)
-        return lod
-
+            entityList = EventList()
+            entityList.fromCache(wikiUser)
+            rating=Event.rateMigration
+        elif entity=="eventseries":
+            entityList=EventSeriesList()
+            entityList.fromCache(wikiUser)
+        elif entity=="country":
+            entityList=CountryList()
+            entityList.getDefault()
+        # get the List of Dicts with ratings for the given entityList
+        lod =  entityList.getRatedLod(ratingCallback=rating)
+        return render_template('datatable.html',title="wikidata",menuList=menuList, listOfDicts=lod)
 
     def getSMWForLoggedInUser(self):
         wusers=WikiUser.getWikiUsers()
