@@ -49,6 +49,27 @@ class TestWebServer(unittest.TestCase):
         self.assertTrue("<th> publtype </th>" in html)
         pass
 
+    def testOREvents(self):
+        '''
+        test OPENSRESARCH event list
+        '''
+        if getpass.getuser()!="wf":
+            return
+        html=self.getResponse("/openresearch/events/100")
+        self.assertTrue("<th> Event </th>" in html)
+        self.assertTrue("<th> Acronym </th>" in html)
+        pass
+
+    def testORCountries(self):
+        '''
+        test OPENSRESARCH event list
+        '''
+        if getpass.getuser()!="wf":
+            return
+        html=self.getResponse("/openresearch/country/100")
+        self.assertTrue("<th> Country </th>" in html)
+        pass
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
