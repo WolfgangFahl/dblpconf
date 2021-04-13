@@ -223,9 +223,10 @@ class WebServer(AppWrap):
         #Assumption data for entites is always converted to LOD to render it as table
         limit=100
         menuList = self.adminMenuList("OpenResearch")
+        wikiUser = hf.getSMW_WikiUser()
         if entity == "event":
             eventList = EventList()
-            wikiUser = hf.WikiUser()
+            eventList.fromCache(wikiUser)
             lod =  self.getEventsLOD(eventList.events)
             return render_template('datatable.html',title="wikidata",menuList=menuList, listOfDicts=lod)
 
@@ -233,17 +234,15 @@ class WebServer(AppWrap):
 
     def getEventsLOD(self, events):
         lod=[]
-        for event in events.values():
+        for event in events:
             eventRecord = event.__dict__
             acronymLength = None
-            if 'Acronym' in eventRecord:
-                acronymLength = len(eventRecord.get('Acronym'))
             acronymMarker = "-"
-            if acronymLength > 20:
-                acronymMarker = f"❌ Length:{acronymLength}"
-            else:
-                acronymMarker = "✅"
-            eventRecord['Acronym length'] = acronymMarker
+            if 'acronym' in eventRecord:
+                acronymLength = len(eventRecord.get('acronym'))
+                acronymMarker = f"❌ Length:{acronymLength}" if acronymLength > 20 else "✅"
+
+            eventRecord['acronym length'] = acronymMarker
             lod.append(eventRecord)
         return lod
 
