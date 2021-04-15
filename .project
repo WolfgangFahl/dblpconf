@@ -3,6 +3,7 @@
 	<name>dblpconf</name>
 	<comment></comment>
 	<projects>
+		<project>OpenResearch</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
