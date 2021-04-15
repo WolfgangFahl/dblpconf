@@ -114,6 +114,22 @@ class WebServer(AppWrap):
         ptpDB=self.getPTPDB()
         if ptpDB is not None:
             self.dbs['ptp']=DB(ptpDB)
+        self.updateOrEntityLists()    
+            
+    def updateOrEntityLists(self):
+        '''
+        preload the open Reserch entities
+        '''
+        wikiUser = hf.getSMW_WikiUser()
+        eventList = EventList()
+        eventList.fromCache(wikiUser)
+        eventSeriesList=EventSeriesList()
+        eventSeriesList.fromCache(wikiUser)
+        countryList=CountryList()
+        countryList.getDefault()
+        self.orEntityLists={}
+        for entityList in [eventList,eventSeriesList,countryList]:
+            self.orEntityLists[entityList.getEntityName()]=entityList
         
     def getUserNameForWikiUser(self,wuser:WikiUser)->str:
         '''
@@ -213,31 +229,24 @@ class WebServer(AppWrap):
         html=render_template("sample.html",title="wikidata",menuList=menuList,dictList=listOfDicts)
         return html
 
-    def showOpenResearchData(self, entity:str):
+    def showOpenResearchData(self, entityName:str):
         '''
         show the list of all events available in OPENRESEARCH
         Args:
-            entiy: Show the data of the given entity. If the entity is not known redirect to home page and show error message
+            entityName: Show the data of the given entity. If the entity is not known redirect to home page and show error message
             limit: Upper limit of the data to be shown
         '''
         #Assumption data for entites is always converted to LOD to render it as table
         limit=100
         menuList = self.adminMenuList("OpenResearch")
-        wikiUser = hf.getSMW_WikiUser()
+       
         rating=None
-        if entity == "event":
-            entityList = EventList()
-            entityList.fromCache(wikiUser)
+        if entityName == "Event":
             rating=Event.rateMigration
-        elif entity=="eventseries":
-            entityList=EventSeriesList()
-            entityList.fromCache(wikiUser)
-        elif entity=="country":
-            entityList=CountryList()
-            entityList.getDefault()
+        entityList=self.orEntityLists[entityName]
         # get the List of Dicts with ratings for the given entityList
         lod =  entityList.getRatedLod(ratingCallback=rating)
-        return render_template('datatable.html',title="wikidata",menuList=menuList, listOfDicts=lod)
+        return render_template('sample.html',title=entityName,menuList=menuList, dictList=lod)
 
     def getSMWForLoggedInUser(self):
         wusers=WikiUser.getWikiUsers()
@@ -377,9 +386,10 @@ class WebServer(AppWrap):
         menuList.append(MenuItem(url_for('showWikiData'),"wikidata"))
         # Add OPENRESEARCH
         orDropDownMenu=DropDownMenu('OpenResearch')
-        orDropDownMenu.addItem(Link(url_for('showOpenResearchData', entity="country"), "Countries"))
-        orDropDownMenu.addItem(Link(url_for('showOpenResearchData', entity="event"), "Events"))
-        orDropDownMenu.addItem(Link(url_for('showOpenResearchData', entity="eventseries"), "Event series"))
+        for orEntityList in self.orEntityLists.values():
+            entityName=orEntityList.getEntityName()
+            pluralName=orEntityList.getPluralname()
+            orDropDownMenu.addItem(Link(url_for('showOpenResearchData', entity=entityName), pluralName))
         menuList.append(orDropDownMenu)
         if current_user.is_anonymous:
             menuList.append(MenuItem('/login','login'))
