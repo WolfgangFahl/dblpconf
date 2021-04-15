@@ -399,7 +399,8 @@ class WebServer(AppWrap):
         for orEntityList in self.orEntityLists.values():
             entityName=orEntityList.getEntityName()
             pluralName=entityName
-            orDropDownMenu.addItem(Link(url_for('showOpenResearchData', entity=entityName), pluralName))
+            url=url_for('showOpenResearchData', entity=entityName)
+            orDropDownMenu.addItem(Link(self.basedUrl(url), pluralName))
         menuList.append(orDropDownMenu)
         if current_user.is_anonymous:
             menuList.append(MenuItem('/login','login'))
