@@ -120,11 +120,11 @@ class WebServer(AppWrap):
         '''
         preload the open Reserch entities
         '''
-        wikiUser = hf.getSMW_WikiUser()
+        self.wikiUser = hf.getSMW_WikiUser()
         eventList = EventList()
-        eventList.fromCache(wikiUser)
+        eventList.fromCache(self.wikiUser)
         eventSeriesList=EventSeriesList()
-        eventSeriesList.fromCache(wikiUser)
+        eventSeriesList.fromCache(self.wikiUser)
         countryList=CountryList()
         countryList.getDefault()
         self.orEntityLists={}
@@ -243,9 +243,19 @@ class WebServer(AppWrap):
         rating=None
         if entityName == "Event":
             rating=Event.rateMigration
+        #if entityName == "EventSeries":
+        #    rating=EventSeries.rateMigration
         entityList=self.orEntityLists[entityName]
         # get the List of Dicts with ratings for the given entityList
         lod =  entityList.getRatedLod(ratingCallback=rating)
+        wikiurl=self.wikiUser.getWikiUrl()
+        wikiurl="https://www.openresearch.org/wiki"
+        for record in lod:
+            if 'pageTitle' in record:
+                pageTitle=record['pageTitle']
+                url=f"{wikiurl}/{pageTitle}"
+                record['pageTitle']=Link(url,pageTitle)
+                
         return render_template('sample.html',title=entityName,menuList=menuList, dictList=lod)
 
     def getSMWForLoggedInUser(self):
@@ -388,7 +398,7 @@ class WebServer(AppWrap):
         orDropDownMenu=DropDownMenu('OpenResearch')
         for orEntityList in self.orEntityLists.values():
             entityName=orEntityList.getEntityName()
-            pluralName=orEntityList.getPluralname()
+            pluralName=entityName
             orDropDownMenu.addItem(Link(url_for('showOpenResearchData', entity=entityName), pluralName))
         menuList.append(orDropDownMenu)
         if current_user.is_anonymous:
