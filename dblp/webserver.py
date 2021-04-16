@@ -24,8 +24,10 @@ from wikibot.wikiuser import WikiUser
 from wikibot.wikiclient import WikiClient
 from wikibot.smw import SMW,SMWClient
 from wtforms import HiddenField, SubmitField, StringField, SelectField
-from openresearch.event import EventList,Event,EventSeriesList, CountryList, Country
+from openresearch.eventcorpus import EventCorpus
+from openresearch.event import CountryList, Event, EventSeries
 from ormigrate.toolbox import HelperFunctions as hf
+from ormigrate.rating import Rating
 
 class WebServer(AppWrap):
     ''' 
@@ -121,14 +123,12 @@ class WebServer(AppWrap):
         preload the open Reserch entities
         '''
         self.wikiUser = hf.getSMW_WikiUser()
-        eventList = EventList()
-        eventList.fromCache(self.wikiUser)
-        eventSeriesList=EventSeriesList()
-        eventSeriesList.fromCache(self.wikiUser)
+        self.eventCorpus=EventCorpus()
+        self.eventCorpus.fromWikiUser(self.wikiUser)
         countryList=CountryList()
         countryList.getDefault()
         self.orEntityLists={}
-        for entityList in [eventList,eventSeriesList,countryList]:
+        for entityList in [self.eventCorpus.eventList,self.eventCorpus.eventSeriesList,countryList]:
             self.orEntityLists[entityList.getEntityName()]=entityList
         
     def getUserNameForWikiUser(self,wuser:WikiUser)->str:
@@ -228,6 +228,21 @@ class WebServer(AppWrap):
         menuList=self.adminMenuList("wikidata")
         html=render_template("sample.html",title="wikidata",menuList=menuList,dictList=listOfDicts)
         return html
+    
+    def convertToLink(self,record:dict,field:str,formatStr:str):
+        '''
+        convert the field in the given record to a Link using the given formatStr
+        
+        Args:
+            record(dict): the record to work on
+            field(str): the name of the field
+            formatStr(str): the format string to use
+        '''
+        if field in record:
+            value=record[field]
+            url=formatStr % value
+            record[field]=Link(url,value)
+            
 
     def showOpenResearchData(self, entityName:str):
         '''
@@ -243,19 +258,30 @@ class WebServer(AppWrap):
         rating=None
         if entityName == "Event":
             rating=Event.rateMigration
-        #if entityName == "EventSeries":
-        #    rating=EventSeries.rateMigration
+        if entityName == "EventSeries":
+            rating=EventSeries.rateMigration
         entityList=self.orEntityLists[entityName]
         # get the List of Dicts with ratings for the given entityList
-        lod =  entityList.getRatedLod(ratingCallback=rating)
+        lod,errors =  entityList.getRatedLod(ratingCallback=rating)
+        # Todo UI reaction e.g. flash ...
+        if len(errors)>0:
+            print(f"{len(errors)} rating processing errors")
         wikiurl=self.wikiUser.getWikiUrl()
         wikiurl="https://www.openresearch.org/wiki"
         for record in lod:
-            if 'pageTitle' in record:
-                pageTitle=record['pageTitle']
-                url=f"{wikiurl}/{pageTitle}"
-                record['pageTitle']=Link(url,pageTitle)
-                
+            self.convertToLink(record, 'pageTitle', f"{wikiurl}/%s")
+            self.convertToLink(record, 'wikidataId', "https://www.wikidata.org/wiki/%s")
+            # TODO:
+            # convert dblpSeries to link
+            if isinstance(record,dict):
+                for column in record.keys():
+                    value=record.get(column)
+                    if isinstance(value,Rating):
+                        # TODO: add widget for Pain
+                        record[column]=value.pain
+            else:
+                print(record) # what?
+                    
         return render_template('sample.html',title=entityName,menuList=menuList, dictList=lod)
 
     def getSMWForLoggedInUser(self):
