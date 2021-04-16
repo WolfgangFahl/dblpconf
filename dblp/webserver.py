@@ -263,7 +263,7 @@ class WebServer(AppWrap):
         #Assumption data for entites is always converted to LOD to render it as table
         limit=100
         menuList = self.adminMenuList("OpenResearch")
-       
+
         rating=None
         if entityName == "Event":
             rating=Event.rateMigration
@@ -293,8 +293,23 @@ class WebServer(AppWrap):
                         record[column]=RatingWidget(value)
             else:
                 print(record) # what?
-                    
-        return render_template('sample.html',title=entityName,menuList=menuList, dictList=lod)
+        lodKeys = self.get_prop_list_from_samples(lod)
+        tableHeaders = [x.replace("PainRating", "\nPainRating") for x in lodKeys]   # Easy hack for the time being
+        return render_template('sample.html',title=entityName,menuList=menuList, dictList=lod, lodKeys=lodKeys, tableHeaders=tableHeaders)
+
+    @staticmethod
+    def get_prop_list_from_samples(samples: list):
+        """
+        Returns a list of used keys by the given list of dicts
+        """
+        if samples is None:
+            return None
+        prop_list = []
+        for sample in samples:
+            for key in sample.keys():
+                if key not in prop_list:
+                    prop_list.append(key)
+        return prop_list
 
     def getSMWForLoggedInUser(self):
         wusers=WikiUser.getWikiUsers()

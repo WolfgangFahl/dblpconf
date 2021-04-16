@@ -51,24 +51,30 @@
 	</nav>
 {%- endmacro %}
 {# table for dict list #}
-{% macro table4DictList(dictList,tableId=none) -%}
+{% macro table4DictList(dictList,tableId=none,lodKeys=none,tableHeaders=none) -%}
 <table {% if tableId is not none %}id="{{ tableId }}"{%endif %} class="table table-bordered table-hover">
   <!-- table header -->
+  {% if tableHeaders is none -%}
+    {%- set tableHeaders = dictList[0] -%}
+  {%- endif %}
   {% if dictList %}
   <thead class="thead-light">
   	<tr>
   		<th>#</th>
-    	{% for key in dictList[0] %}
+    	{% for key in tableHeaders %}
     	<th> {{ key }} </th>
     	{% endfor %}
  	</tr>
   <thead>
   <tbody>	
     <!-- table rows -->
+    {% if lodKeys is none -%}
+       {%- set lodKeys = dictList[0] -%}
+    {%- endif %}
     {% for dict_item in dictList %}
     <tr>
        <td> {{loop.index}} </td>
-       {% for key in dictList[0] %}
+       {% for key in lodKeys %}
        {% set value = dict_item[key] -%}
        <td>  {% if value is not none %}{{ value|safe }} {%endif %} </td>
        {% endfor %}
