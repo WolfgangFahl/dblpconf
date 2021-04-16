@@ -52,11 +52,14 @@
 {%- endmacro %}
 {# table for dict list #}
 {% macro table4DictList(dictList,tableId=none,lodKeys=none,tableHeaders=none) -%}
+{% if lodKeys is undefined -%}
+   {%- set lodKeys = dictList[0] -%}
+{%- endif %}
+{% if tableHeaders is undefined -%}
+   {%- set tableHeaders = lodKeys -%}
+{%- endif %}
 <table {% if tableId is not none %}id="{{ tableId }}"{%endif %} class="table table-bordered table-hover">
   <!-- table header -->
-  {% if tableHeaders is none -%}
-    {%- set tableHeaders = dictList[0] -%}
-  {%- endif %}
   {% if dictList %}
   <thead class="thead-light">
   	<tr>
@@ -68,9 +71,6 @@
   <thead>
   <tbody>	
     <!-- table rows -->
-    {% if lodKeys is none -%}
-       {%- set lodKeys = dictList[0] -%}
-    {%- endif %}
     {% for dict_item in dictList %}
     <tr>
        <td> {{loop.index}} </td>
