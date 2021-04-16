@@ -285,7 +285,7 @@ class WebServer(AppWrap):
                 self.removeRecordFields(record,loginRequiredFields)
             self.convertToLink(record, 'pageTitle', f"{wikiurl}/%s")
             self.convertToLink(record, 'wikidataId', "https://www.wikidata.org/wiki/%s")
-            self.convertToLink(record, 'dblpId', "https://dblp.org/db/conf/%s/index.html")
+            self.convertToLink(record, 'dblpSeries', "https://dblp.org/db/conf/%s/index.html")
             if isinstance(record,dict):
                 for column in record.keys():
                     value=record.get(column)
