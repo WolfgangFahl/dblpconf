@@ -279,8 +279,7 @@ class WebServer(AppWrap):
         wikiurl=self.wikiUser.getWikiUrl()
         wikiurl="https://www.openresearch.org/wiki"
         for record in lod:
-            luser = self.loginBluePrint.getLoggedInUser()
-            if luser is None:
+            if not current_user.is_authenticated:
                 # Remove record fields that should only be visable for users with login rights
                 loginRequiredFields = ["lastEditor"]
                 self.removeRecordFields(record,loginRequiredFields)
@@ -503,14 +502,20 @@ class RatingWidget(Widget):
     @staticmethod
     def lookupPainImage(rating: int):
         '''Returns html image tag to the corresponding pain rating'''
-        painImages = {1: "http://rq.bitplan.com/images/rq/a/a3/Pain0.png",
-                      2: "https://rq.bitplan.com/images/rq/0/01/Pain1.png",
-                      3: "https://rq.bitplan.com/images/rq/0/0a/Pain4.png",
-                      4: "https://rq.bitplan.com/images/rq/b/b0/Pain6.png",
-                      5: "https://rq.bitplan.com/images/rq/6/6c/Pain7.png",
-                      6: "https://rq.bitplan.com/images/rq/2/29/Pain10.png"
-                      }
-        if rating > 0 and rating < 7:
+        painImages = {
+             0: "http://rq.bitplan.com/images/rq/a/a3/Pain0.png",
+             1: "https://rq.bitplan.com/images/rq/0/01/Pain1.png",
+             2: "https://rq.bitplan.com/images/rq/0/01/Pain1.png",
+             3: "https://rq.bitplan.com/images/rq/0/0a/Pain4.png",
+             4: "https://rq.bitplan.com/images/rq/0/0a/Pain4.png",
+             5: "https://rq.bitplan.com/images/rq/b/b0/Pain6.png",
+             6: "https://rq.bitplan.com/images/rq/b/b0/Pain6.png",
+             7: "https://rq.bitplan.com/images/rq/6/6c/Pain7.png",
+             8: "https://rq.bitplan.com/images/rq/6/6c/Pain7.png",
+             9: "https://rq.bitplan.com/images/rq/2/29/Pain10.png",
+            10: "https://rq.bitplan.com/images/rq/2/29/Pain10.png"
+        }
+        if rating in painImages:
             return f'<img alt="{rating}" src="{painImages[rating]}" width="32" height="32"/>'
         else:
             return ""
