@@ -6,7 +6,7 @@ Created on 2020-12-30
 from fb4.app import AppWrap
 from fb4.login_bp import LoginBluePrint
 from fb4.sqldb import db
-from fb4.widgets import Link, MenuItem,DropDownMenu
+from fb4.widgets import Link, MenuItem, DropDownMenu, Widget
 from flask import abort,flash,render_template, url_for
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
@@ -242,7 +242,16 @@ class WebServer(AppWrap):
             value=record[field]
             url=formatStr % value
             record[field]=Link(url,value)
-            
+
+    def removeRecordFields(self, record:dict,fields:list):
+        '''Removes the given list of fields form the given record
+        Args:
+            record(dict): the record to work on
+            fields(list): list of fields that should be removed from the record
+        '''
+        for field in fields:
+            if field in record:
+                del record[field]
 
     def showOpenResearchData(self, entityName:str):
         '''
@@ -263,22 +272,26 @@ class WebServer(AppWrap):
         entityList=self.orEntityLists[entityName]
         # get the List of Dicts with ratings for the given entityList
         lod,errors =  entityList.getRatedLod(ratingCallback=rating)
-        # Todo UI reaction e.g. flash ...
         if len(errors)>0:
-            print(f"{len(errors)} rating processing errors")
+            errorMsg = f"{len(errors)} rating processing errors"
+            print(errorMsg)
+            flash(message=errorMsg, category="warning")
         wikiurl=self.wikiUser.getWikiUrl()
         wikiurl="https://www.openresearch.org/wiki"
         for record in lod:
+            luser = self.loginBluePrint.getLoggedInUser()
+            if luser is None:
+                # Remove record fields that should only be visable for users with login rights
+                loginRequiredFields = ["lastEditor"]
+                self.removeRecordFields(record,loginRequiredFields)
             self.convertToLink(record, 'pageTitle', f"{wikiurl}/%s")
             self.convertToLink(record, 'wikidataId', "https://www.wikidata.org/wiki/%s")
-            # TODO:
-            # convert dblpSeries to link
+            self.convertToLink(record, 'dblpId', "https://dblp.org/db/conf/%s/index.html")
             if isinstance(record,dict):
                 for column in record.keys():
                     value=record.get(column)
                     if isinstance(value,Rating):
-                        # TODO: add widget for Pain
-                        record[column]=value.pain
+                        record[column]=RatingWidget(value)
             else:
                 print(record) # what?
                     
@@ -477,6 +490,34 @@ class ActionForm(FlaskForm):
     queryTableSelection = HiddenField()
     actionTableSelection = HiddenField()
     submit = SubmitField("execute")
+
+class RatingWidget(Widget):
+    '''
+    Displays a rating
+    '''
+
+    def __init__(self, rating:Rating):
+        super().__init__()
+        self.rating = rating
+
+    @staticmethod
+    def lookupPainImage(rating: int):
+        '''Returns html image tag to the corresponding pain rating'''
+        painImages = {1: "http://rq.bitplan.com/images/rq/a/a3/Pain0.png",
+                      2: "https://rq.bitplan.com/images/rq/0/01/Pain1.png",
+                      3: "https://rq.bitplan.com/images/rq/0/0a/Pain4.png",
+                      4: "https://rq.bitplan.com/images/rq/b/b0/Pain6.png",
+                      5: "https://rq.bitplan.com/images/rq/6/6c/Pain7.png",
+                      6: "https://rq.bitplan.com/images/rq/2/29/Pain10.png"
+                      }
+        if rating > 0 and rating < 7:
+            return f'<img alt="{rating}" src="{painImages[rating]}" width="32" height="32"/>'
+        else:
+            return ""
+
+    def render(self):
+        painImage = self.lookupPainImage(self.rating.pain)
+        return f'<span title="{self.rating.hint}">{self.rating.pain}{painImage}</span>'
 
 if __name__ == '__main__':
     # construct the web application    
