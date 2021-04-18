@@ -286,6 +286,9 @@ class WebServer(AppWrap):
             self.convertToLink(record, 'pageTitle', f"{wikiurl}/%s")
             self.convertToLink(record, 'wikidataId', "https://www.wikidata.org/wiki/%s")
             self.convertToLink(record, 'dblpSeries', "https://dblp.org/db/conf/%s/index.html")
+            if "lastEditor" in record:
+                record["lastEditor"]=record["lastEditor"].replace("User:","")
+            self.convertToLink(record, 'lastEditor',"https://www.openresearch.org/wiki/Special:Contributions/%s")
             if isinstance(record,dict):
                 for column in record.keys():
                     value=record.get(column)
