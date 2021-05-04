@@ -51,23 +51,22 @@ class TestWebServer(unittest.TestCase):
 
     def testOREvents(self):
         '''
-        test OPENSRESARCH event list
+        test OPENSRESEARCH event list
         '''
         if getpass.getuser()!="wf":
             return
-        html=self.getResponse("/openresearch/events/100")
-        self.assertTrue("<th> Event </th>" in html)
-        self.assertTrue("<th> Acronym </th>" in html)
+        html=self.getResponse("/openresearch/Event")
+        self.assertTrue("acronym" in html)
         pass
 
     def testORCountries(self):
         '''
-        test OPENSRESARCH event list
+        test OPENSRESEARCH event list
         '''
         if getpass.getuser()!="wf":
             return
-        html=self.getResponse("/openresearch/country/100")
-        self.assertTrue("<th> Country </th>" in html)
+        html=self.getResponse("/openresearch/Country")
+        self.assertTrue("wikidataId" in html)
         pass
 
 if __name__ == "__main__":
