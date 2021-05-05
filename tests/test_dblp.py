@@ -25,6 +25,9 @@ class TestDblp(unittest.TestCase):
 #            logging.basicConfig(stream=sys.stderr, level=logging.INFO)          
 #        self.logger=logging.getLogger("TestDblp")
         self.mock=True
+        # uncomment for recreation
+        # self.debug=True
+        # self.mock=False
         pass
 
     def tearDown(self):
@@ -112,7 +115,6 @@ class TestDblp(unittest.TestCase):
         proceedingsTable=tableDict["proceedings"]
         pcols=proceedingsTable["columns"]
         self.assertTrue("conf" in pcols)
-        
         
     def testSqlLiteDatabaseCreation(self):
         '''

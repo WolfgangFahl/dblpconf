@@ -138,7 +138,7 @@ class Dblp(object):
         if not os.path.isfile(self.xmlfile) or reload:
             os.makedirs(self.xmlpath,exist_ok=True)
             if self.debug:
-                print("downloading %s from %s" % (self.xmlpath, self.gzurl))
+                print("downloading %s from %s" % (self.xmlfile, self.gzurl))
             urlreq = urllib.request.urlopen(self.gzurl)
             z = GzipFile(fileobj=BytesIO(urlreq.read()), mode='rb')
             with open(self.xmlfile, 'wb') as outfile:
