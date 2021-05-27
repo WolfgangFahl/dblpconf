@@ -79,6 +79,10 @@ class WebServer(AppWrap):
         @self.app.route('/wikidata')
         def showWikiData():
             return self.showWikiData()
+        
+        @self.app.route('/openresearch/<entity>/<pagename>',methods=['GET', 'POST'])
+        def showOpenResearchPage(entity,pagename):
+            return self.showOpenResearchPage(entity,pagename)
 
         @self.app.route('/openresearch/<entity>',methods=['GET', 'POST'])
         def showOpenResearchData(entity):
@@ -252,6 +256,21 @@ class WebServer(AppWrap):
         for field in fields:
             if field in record:
                 del record[field]
+                
+    def showOpenResearchPage(self,entityName:str,pageName:str):
+        '''
+        def show the given instance of the entity with the given pagenName
+        '''
+        menuList = self.adminMenuList("OpenResearch")
+        wikiUser=self.wikiUser
+        wikiclient=WikiClient.ofWikiUser(wikiUser)
+        content=wikiclient.getHtml(pageName)
+        title=f"entity: {entityName} pageName: {pageName} url for wikiuser: {wikiUser.getWikiUrl()}"
+        return render_template("orpage.html",title=title,content=content,menuList=menuList)
+        
+    def fixPageTitle(self,pageTitle):
+        result=pageTitle.replace(" ","_")
+        return result
 
     def showOpenResearchData(self, entityName:str):
         '''
@@ -283,6 +302,9 @@ class WebServer(AppWrap):
                 # Remove record fields that should only be visable for users with login rights
                 loginRequiredFields = ["lastEditor"]
                 self.removeRecordFields(record,loginRequiredFields)
+            if 'pageTitle' in record:
+                record['orpage']=self.fixPageTitle(record['pageTitle'])
+                self.convertToLink(record,'orpage',f"/openresearch/{entityName}/%s")
             self.convertToLink(record, 'pageTitle', f"{wikiurl}/%s")
             self.convertToLink(record, 'wikidataId', "https://www.wikidata.org/wiki/%s")
             self.convertToLink(record, 'dblpSeries', "https://dblp.org/db/conf/%s/index.html")
@@ -297,6 +319,7 @@ class WebServer(AppWrap):
             else:
                 print(record) # what?
         lodKeys = self.get_prop_list_from_samples(lod)
+        lodKeys =["orpage"] + lodKeys
         tableHeaders = [x.replace("PainRating", "\nPainRating") for x in lodKeys]   # Easy hack for the time being
         return render_template('sample.html',title=entityName,menuList=menuList, dictList=lod, lodKeys=lodKeys, tableHeaders=tableHeaders)
 
@@ -319,13 +342,14 @@ class WebServer(AppWrap):
         luser=self.loginBluePrint.getLoggedInUser()
         smw=None
         wuser=None
+        wikiclient=None
         for wuser in wusers.values():
             username=self.getUserNameForWikiUser(wuser)
             if luser.username==username:
                 wikiclient=WikiClient.ofWikiUser(wuser)
                 smw=SMWClient(wikiclient.getSite())
                 break
-        return wuser,smw
+        return wuser,wikiclient,smw
         
     def showLambdaActions(self):
         '''
@@ -333,7 +357,7 @@ class WebServer(AppWrap):
         '''
         if not current_user.is_authenticated:
             abort(404)
-        wuser,smw=self.getSMWForLoggedInUser()
+        wuser,wikiclient,smw=self.getSMWForLoggedInUser()
         if smw is None:
             abort(404)
         else:
