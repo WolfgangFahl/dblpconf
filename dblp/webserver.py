@@ -3,11 +3,12 @@ Created on 2020-12-30
 
 @author: wf
 '''
+from wikifile.wikiFix import WikiFix
 from fb4.app import AppWrap
 from fb4.login_bp import LoginBluePrint
 from fb4.sqldb import db
 from fb4.widgets import Link, MenuItem, DropDownMenu, Widget
-from flask import abort,flash,render_template, url_for
+from flask import abort,flash,render_template, url_for,send_file
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from lodstorage.query import QueryManager
@@ -87,6 +88,10 @@ class WebServer(AppWrap):
         @self.app.route('/openresearch/<entity>',methods=['GET', 'POST'])
         def showOpenResearchData(entity):
             return self.showOpenResearchData(entity)
+
+        @self.app.route('/openresearch/download/<entity>/<pagename>', methods=['GET', 'POST'])
+        def generateCsvOrSeries(entity,pagename):
+            return self.generateCsvOrSeries(entity,pagename)
         
         @login_required
         @self.app.route('/lambdactions',methods=['GET', 'POST'])
@@ -271,6 +276,18 @@ class WebServer(AppWrap):
     def fixPageTitle(self,pageTitle):
         result=pageTitle.replace(" ","_")
         return result
+
+    def generateCsvOrSeries(self, entityname, pagename):
+        if entityname.lower() == "eventseries":
+            wikiUser= str(self.wikiUser).split(' ')[-1]
+            print(wikiUser)
+            wikiFix= WikiFix(wikiUser)
+            pageTitles = wikiFix.getEventsinSeries(pagename, 'Event in series')
+            header, dicts = wikiFix.getCsv(pageTitles)
+
+            path = '/test'
+            wikiFix.exportToCsv(header, dicts,path)
+            return send_file(path, as_attachment=True)
 
     def showOpenResearchData(self, entityName:str):
         '''
