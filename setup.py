@@ -44,6 +44,7 @@ setup(name='dblpconf',
         'py-3rdparty-mediawiki>=0.1.23',
         'pylodstorage',
         'lxml',
-        'OpenResearchMigration>=0.0.3'
+        'OpenResearchMigration>=0.0.3',
+        'wikirender>=0.0.5'
       ],
       zip_safe=False)
