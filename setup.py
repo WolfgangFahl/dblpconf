@@ -12,7 +12,7 @@ except:
     long_description = open('../../README.md').read()
 
 setup(name='dblpconf',
-      version='0.0.4',
+      version='0.0.5',
       description='dblp conf',
       long_description=long_description,
       long_description_content_type='text/markdown',
@@ -30,7 +30,6 @@ setup(name='dblpconf',
       ),
       classifiers=[
             'Programming Language :: Python',
-            'Programming Language :: Python :: 3.6',
             'Programming Language :: Python :: 3.7',
             'Programming Language :: Python :: 3.8',
             'Programming Language :: Python :: 3.9'
