@@ -277,17 +277,26 @@ class WebServer(AppWrap):
         result=pageTitle.replace(" ","_")
         return result
 
-    def generateCsvOrSeries(self, entityname, pagename):
-        if entityname.lower() == "eventseries":
-            wikiUser= str(self.wikiUser).split(' ')[-1]
-            print(wikiUser)
-            wikiFix= WikiFix(wikiUser)
-            pageTitles = wikiFix.getEventsinSeries(pagename, 'Event in series')
-            header, dicts = wikiFix.getCsv(pageTitles)
+    def ensureDirectoryExists(self,file_path):
+        directory = os.path.dirname(file_path)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
 
-            path = '/test'
-            wikiFix.exportToCsv(header, dicts,path)
-            return send_file(path, as_attachment=True)
+    def generateCsvOrSeries(self, entityname, pagename):
+        home = expanduser("~")
+        wikiUser = str(self.wikiUser).split(' ')[-1]
+        wikiFix = WikiFix(wikiUser)
+        if entityname.lower() == "eventseries":
+            pageTitles = wikiFix.getEventsinSeries(pagename, 'Event in series')
+        elif entityname.lower()== 'event':
+            pageTitles=[pagename]
+            print(pageTitles)
+        header, dicts = wikiFix.getCsv(pageTitles)
+        home = expanduser("~")
+        filepath = "%s/.ptp/csvs/%s" % (home,pagename)
+        self.ensureDirectoryExists(filepath)
+        wikiFix.exportToCsv(header, dicts,filepath)
+        return send_file(filepath+'.csv', as_attachment=True)
 
     def showOpenResearchData(self, entityName:str):
         '''
