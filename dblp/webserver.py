@@ -304,14 +304,12 @@ class WebServer(AppWrap):
                 LoD.append(event.__dict__)
                 pageTitles.append(event.pageTitle)
             filepath = "%s/.ptp/csvs/%s" % (home, pagename)
-            CSV.storeToCSVFile(LoD, filepath)
-            return send_file(filepath + '.csv', as_attachment=True, cache_timeout=0)
         elif entitynamelower== 'event':
             pageTitles=[pagename]
             LoD = wikiFile.exportWikiSonToLOD(pageTitles,wikiSonlookup[entitynamelower])
             filepath = "%s/.ptp/csvs/%s" % (home,pagename)
-            CSV.storeToCSVFile(LoD,filepath)
-            return send_file(filepath+'.csv', as_attachment=True,cache_timeout=0)
+        CSV.storeToCSVFile(LoD,filepath)
+        return send_file(filepath+'.csv', as_attachment=True,cache_timeout=0)
 
 
     def getCsvFromUser(self,base_url):
