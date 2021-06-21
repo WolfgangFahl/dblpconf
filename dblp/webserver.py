@@ -3,22 +3,24 @@ Created on 2020-12-30
 
 @author: wf
 '''
-from wikifile.wikiFix import WikiFix
+from wikifile.wikiFileManager import WikiFileManager
 from fb4.app import AppWrap
 from fb4.login_bp import LoginBluePrint
 from fb4.sqldb import db
 from fb4.widgets import Link, MenuItem, DropDownMenu, Widget
-from flask import abort,flash,render_template, url_for,send_file
+from flask import abort,flash,render_template, url_for,send_file,request
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from lodstorage.query import QueryManager
 from lodstorage.sparql import SPARQL
 from lodstorage.sql import SQLDB
+from lodstorage.csv import CSV
 from dblp.dblpxml import Dblp
 from os.path import expanduser
 
 import os
 import json
+import tempfile
 
 from action.wikiaction import WikiAction
 from wikibot.wikiuser import WikiUser
@@ -85,11 +87,15 @@ class WebServer(AppWrap):
         def showOpenResearchPage(entity,pagename):
             return self.showOpenResearchPage(entity,pagename)
 
+        @self.app.route('/openresearch/upload/', methods=['GET', 'POST'])
+        def getCsvFromUser():
+            return self.getCsvFromUser(request.base_url)
+
         @self.app.route('/openresearch/<entity>',methods=['GET', 'POST'])
         def showOpenResearchData(entity):
             return self.showOpenResearchData(entity)
 
-        @self.app.route('/openresearch/download/<entity>/<pagename>', methods=['GET', 'POST'])
+        @self.app.route('/openresearch/<entity>/<pagename>/download', methods=['GET', 'POST'])
         def generateCsvOrSeries(entity,pagename):
             return self.generateCsvOrSeries(entity,pagename)
         
@@ -284,19 +290,32 @@ class WebServer(AppWrap):
 
     def generateCsvOrSeries(self, entityname, pagename):
         home = expanduser("~")
+        wikiSonlookup = {'event':'Event' , 'eventseries':'Event series'}
+        entitynamelower= entityname.lower()
         wikiUser = str(self.wikiUser).split(' ')[-1]
-        wikiFix = WikiFix(wikiUser)
-        if entityname.lower() == "eventseries":
-            pageTitles = wikiFix.getEventsinSeries(pagename, 'Event in series')
-        elif entityname.lower()== 'event':
+        wikiFile = WikiFileManager(wikiUser)
+        pageTitles = []
+        if entitynamelower == "eventseries":
+            eventCorpus = EventCorpus()
+            eventCorpus.fromWikiUser(self.wikiUser)
+            eventsInSeries=eventCorpus.getEventsInSeries(pagename)
+            LoD=[]
+            for event in eventsInSeries:
+                LoD.append(event.__dict__)
+                pageTitles.append(event.pageTitle)
+            filepath = "%s/.ptp/csvs/%s" % (home, pagename)
+            CSV.storeToCSVFile(LoD, filepath)
+            return send_file(filepath + '.csv', as_attachment=True, cache_timeout=0)
+        elif entitynamelower== 'event':
             pageTitles=[pagename]
-            print(pageTitles)
-        header, dicts = wikiFix.getCsv(pageTitles)
-        home = expanduser("~")
-        filepath = "%s/.ptp/csvs/%s" % (home,pagename)
-        self.ensureDirectoryExists(filepath)
-        wikiFix.exportToCsv(header, dicts,filepath)
-        return send_file(filepath+'.csv', as_attachment=True)
+            LoD = wikiFile.exportWikiSonToLOD(pageTitles,wikiSonlookup[entitynamelower])
+            filepath = "%s/.ptp/csvs/%s" % (home,pagename)
+            CSV.storeToCSVFile(LoD,filepath)
+            return send_file(filepath+'.csv', as_attachment=True,cache_timeout=0)
+
+
+    def getCsvFromUser(self,base_url):
+        return
 
     def showOpenResearchData(self, entityName:str):
         '''
