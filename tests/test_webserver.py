@@ -63,6 +63,8 @@ class TestWebServer(unittest.TestCase):
         '''
         test OPENSRESEARCH csv generation
         '''
+        if getpass.getuser()!="wf":
+            return
         web = WebServer()
         file = web.generateCSV('Event', '3DUI 2020')
         self.assertIsNotNone(file)
