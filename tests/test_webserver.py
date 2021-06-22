@@ -59,6 +59,15 @@ class TestWebServer(unittest.TestCase):
         self.assertTrue("acronym" in html)
         pass
 
+    def testCsvDownload(self):
+        '''
+        test OPENSRESEARCH csv generation
+        '''
+        web = WebServer()
+        file = web.generateCSV('Event', '3DUI 2020')
+        self.assertIsNotNone(file)
+        pass
+
     def testORCountries(self):
         '''
         test OPENSRESEARCH event list

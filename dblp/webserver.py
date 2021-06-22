@@ -96,8 +96,8 @@ class WebServer(AppWrap):
             return self.showOpenResearchData(entity)
 
         @self.app.route('/openresearch/<entity>/<pagename>/download', methods=['GET', 'POST'])
-        def generateCsvOrSeries(entity,pagename):
-            return self.generateCsvOrSeries(entity,pagename)
+        def downloadCsv(entity,pagename):
+            return self.downloadCsv(entity,pagename)
         
         @login_required
         @self.app.route('/lambdactions',methods=['GET', 'POST'])
@@ -288,27 +288,46 @@ class WebServer(AppWrap):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-    def generateCsvOrSeries(self, entityname, pagename):
+
+    def generateCSV(self,entityname,pagename):
+        '''
+        generates CSV file to push to User for the given entity and pagename
+        Args:
+            entityname(str): Name of the OR entity e.g Event, EventSeries
+            pagename(stR): wiki page name
+        Returns:
+            filepath for the generated CSV.
+        '''
         home = expanduser("~")
-        wikiSonlookup = {'event':'Event' , 'eventseries':'Event series'}
-        entitynamelower= entityname.lower()
+        self.wikiUser = hf.getSMW_WikiUser()
+        wikiSonlookup = {'event': 'Event', 'eventseries': 'Event series'}
+        entitynamelower = entityname.lower()
         wikiUser = str(self.wikiUser).split(' ')[-1]
         wikiFile = WikiFileManager(wikiUser)
         pageTitles = []
         if entitynamelower == "eventseries":
             eventCorpus = EventCorpus()
             eventCorpus.fromWikiUser(self.wikiUser)
-            eventsInSeries=eventCorpus.getEventsInSeries(pagename)
-            LoD=[]
+            eventsInSeries = eventCorpus.getEventsInSeries(pagename)
+            LoD = []
             for event in eventsInSeries:
                 LoD.append(event.__dict__)
                 pageTitles.append(event.pageTitle)
             filepath = "%s/.ptp/csvs/%s" % (home, pagename)
-        elif entitynamelower== 'event':
-            pageTitles=[pagename]
-            LoD = wikiFile.exportWikiSonToLOD(pageTitles,wikiSonlookup[entitynamelower])
-            filepath = "%s/.ptp/csvs/%s" % (home,pagename)
-        CSV.storeToCSVFile(LoD,filepath)
+        elif entitynamelower == 'event':
+            pageTitles = [pagename]
+            LoD = wikiFile.exportWikiSonToLOD(pageTitles, wikiSonlookup[entitynamelower])
+            filepath = "%s/.ptp/csvs/%s" % (home, pagename)
+        self.ensureDirectoryExists(filepath)
+        CSV.storeToCSVFile(LoD, filepath)
+        return filepath
+
+
+    def downloadCsv(self, entityname, pagename):
+        '''
+        Function to send the csv file to the webpage for the user to download
+        '''
+        filepath=self.generateCSV(entityname,pagename)
         return send_file(filepath+'.csv', as_attachment=True,cache_timeout=0)
 
 
