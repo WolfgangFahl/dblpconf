@@ -8,7 +8,7 @@ from fb4.app import AppWrap
 from fb4.login_bp import LoginBluePrint
 from fb4.sqldb import db
 from fb4.widgets import Link, MenuItem, DropDownMenu, Widget
-from flask import abort,flash,render_template, url_for,send_file,request
+from flask import abort,flash,render_template, url_for,send_file,request,redirect
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from lodstorage.query import QueryManager
@@ -28,7 +28,7 @@ from wikibot.wikiclient import WikiClient
 from wikibot.smw import SMW,SMWClient
 from wtforms import HiddenField, SubmitField, StringField, SelectField
 from openresearch.eventcorpus import EventCorpus
-from openresearch.event import CountryList, Event, EventSeries
+from openresearch.event import CountryList, Event, EventSeries, EventList
 from ormigrate.toolbox import HelperFunctions as hf
 from ormigrate.rating import Rating
 
@@ -49,6 +49,7 @@ class WebServer(AppWrap):
             dblp(Dblp): preconfigured dblp access (e.g. for mock testing)
         '''
         self.debug=debug
+        self.wikiUser = hf.getSMW_WikiUser('orclone')
         self.dblp=dblp
         scriptdir = os.path.dirname(os.path.abspath(__file__))
         template_folder=scriptdir + '/../templates'
@@ -89,7 +90,7 @@ class WebServer(AppWrap):
 
         @self.app.route('/openresearch/upload/', methods=['GET', 'POST'])
         def getCsvFromUser():
-            return self.getCsvFromUser(request.base_url)
+            return self.getCsvFromUser()
 
         @self.app.route('/openresearch/<entity>',methods=['GET', 'POST'])
         def showOpenResearchData(entity):
@@ -98,6 +99,11 @@ class WebServer(AppWrap):
         @self.app.route('/openresearch/<entity>/<pagename>/download', methods=['GET', 'POST'])
         def downloadCsv(entity,pagename):
             return self.downloadCsv(entity,pagename)
+
+        @login_required
+        @self.app.route('/openresearch/updatecache', methods=['GET', 'POST'])
+        def updateCache():
+            return self.updateCache()
         
         @login_required
         @self.app.route('/lambdactions',methods=['GET', 'POST'])
@@ -131,13 +137,24 @@ class WebServer(AppWrap):
         ptpDB=self.getPTPDB()
         if ptpDB is not None:
             self.dbs['ptp']=DB(ptpDB)
-        self.updateOrEntityLists()    
-            
+        self.updateOrEntityLists()
+
+    def updateCache(self):
+        self.updateOrCache()
+        return self.showOpenResearchData('Event')
+
+    def updateOrCache(self):
+        '''
+        Updates the OpenResearch Cache file
+        '''
+        eventList=EventList()
+        eventList.fromCache(self.wikiUser,force=True)
+        return eventList
+
     def updateOrEntityLists(self):
         '''
         preload the open Reserch entities
         '''
-        self.wikiUser = hf.getSMW_WikiUser()
         self.eventCorpus=EventCorpus()
         self.eventCorpus.fromWikiUser(self.wikiUser)
         countryList=CountryList()
@@ -239,7 +256,7 @@ class WebServer(AppWrap):
             self.linkColumn("ACM_pid",row,formatWith="https://dl.acm.org/conference/%s")
             self.linkColumn('GND_pid', row, formatWith="https://lobid.org/gnd/%s")
             self.linkColumn("official_website", row)
-                
+
         menuList=self.adminMenuList("wikidata")
         html=render_template("sample.html",title="wikidata",menuList=menuList,dictList=listOfDicts)
         return html
@@ -299,7 +316,6 @@ class WebServer(AppWrap):
             filepath for the generated CSV.
         '''
         home = expanduser("~")
-        self.wikiUser = hf.getSMW_WikiUser()
         wikiSonlookup = {'event': 'Event', 'eventseries': 'Event series'}
         entitynamelower = entityname.lower()
         wikiUser = str(self.wikiUser).split(' ')[-1]
@@ -309,15 +325,16 @@ class WebServer(AppWrap):
             eventCorpus = EventCorpus()
             eventCorpus.fromWikiUser(self.wikiUser)
             eventsInSeries = eventCorpus.getEventsInSeries(pagename)
-            LoD = []
+            pageTitles = []
             for event in eventsInSeries:
-                LoD.append(event.__dict__)
-                pageTitles.append(event.pageTitle)
-            filepath = "%s/.ptp/csvs/%s" % (home, pagename)
+                if hasattr(event,'pageTitle'):
+                    pageTitles.append(event.pageTitle)
         elif entitynamelower == 'event':
             pageTitles = [pagename]
-            LoD = wikiFile.exportWikiSonToLOD(pageTitles, wikiSonlookup[entitynamelower])
-            filepath = "%s/.ptp/csvs/%s" % (home, pagename)
+        print(pageTitles)
+        LoD = wikiFile.exportWikiSonToLOD(pageTitles, 'Event')
+        print(LoD)
+        filepath = "%s/.ptp/csvs/%s" % (home, pagename)
         self.ensureDirectoryExists(filepath)
         CSV.storeToCSVFile(LoD, filepath)
         return filepath
@@ -331,8 +348,47 @@ class WebServer(AppWrap):
         return send_file(filepath+'.csv', as_attachment=True,cache_timeout=0)
 
 
-    def getCsvFromUser(self,base_url):
-        return
+    def processCsvToWiki(self,csv):
+        '''
+        processes the given csv object to convert to LoD and push it to the wiki with regard to self.wikiUser
+        Args:
+            csv(TempFile): csv file uploaded by user
+        Returns:
+            Nothing
+        '''
+        #Only personal testing
+        wikiFile = WikiFileManager('ormk')
+        #ToDo: Change to orclone
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # The context manager will automatically delete this directory after this section
+            print(f"Created a temporary directory: {tmpdir}")
+            filepath = os.path.join(tmpdir, csv.filename)
+            csv.save(filepath)
+            csvStr = CSV.readFile(filepath)
+        print(csvStr)
+        csvList = csvStr.split('\n')
+        csvList = list(filter(None, csvList))
+        headers = csvList[0].split(',')
+        print(headers)
+        LoD = CSV.fromCSV(csvStr)
+        print(LoD)
+        eventList = EventList()
+        eventList.fromLoD(LoD)
+        wikiFile.importLODtoWiki(LoD, 'Event')
+
+    def getCsvFromUser(self):
+        '''
+        Function to get csv from user and push to wiki
+        '''
+        if request.method == "POST":
+
+            if request.files:
+                csv = request.files["csv"]
+                self.processCsvToWiki(csv)
+                return redirect('https://confident.dbis.rwth-aachen.de/or/index.php?title=Main_Page')
+        menuList = self.adminMenuList("OpenResearch")
+        html = render_template('upload.html',menuList=menuList)
+        return html
 
     def showOpenResearchData(self, entityName:str):
         '''

@@ -5,6 +5,10 @@ Created on 2021-01-26
 '''
 import unittest
 from dblp.webserver import WebServer
+import os.path
+import time
+import datetime
+from openresearch.event import EventList
 import tests.test_dblp
 import getpass
 
@@ -58,6 +62,20 @@ class TestWebServer(unittest.TestCase):
         html=self.getResponse("/openresearch/Event")
         self.assertTrue("acronym" in html)
         pass
+
+    def testUpdateCache(self):
+        '''
+        test for the issue #18
+        '''
+        if getpass.getuser()!="wf":
+            return
+        web = WebServer()
+        eventList = web.updateOrCache()
+        filepath = eventList.getJsonFile()
+        lastModifyTime = datetime.datetime.fromtimestamp(os.path.getmtime(filepath))
+        now = datetime.datetime.now()
+        diff=now-lastModifyTime
+        self.assertTrue(diff.seconds < 30)
 
     def testCsvDownload(self):
         '''
