@@ -88,14 +88,17 @@ class WebServer(AppWrap):
         def showOpenResearchPage(entity,pagename):
             return self.showOpenResearchPage(entity,pagename)
 
+        @login_required
         @self.app.route('/openresearch/upload/', methods=['GET', 'POST'])
         def getCsvFromUser():
             return self.getCsvFromUser()
 
+        @login_required
         @self.app.route('/openresearch/<entity>',methods=['GET', 'POST'])
         def showOpenResearchData(entity):
             return self.showOpenResearchData(entity)
 
+        @login_required
         @self.app.route('/openresearch/<entity>/<pagename>/download', methods=['GET', 'POST'])
         def downloadCsv(entity,pagename):
             return self.downloadCsv(entity,pagename)
@@ -318,8 +321,8 @@ class WebServer(AppWrap):
         home = expanduser("~")
         wikiSonlookup = {'event': 'Event', 'eventseries': 'Event series'}
         entitynamelower = entityname.lower()
-        wikiUser = str(self.wikiUser).split(' ')[-1]
-        wikiFile = WikiFileManager(wikiUser)
+        wikiId=self.getWikiIdForLoggedInUser()
+        wikiFile = WikiFileManager(wikiId)
         pageTitles = []
         if entitynamelower == "eventseries":
             eventCorpus = EventCorpus()
@@ -331,9 +334,10 @@ class WebServer(AppWrap):
                     pageTitles.append(event.pageTitle)
         elif entitynamelower == 'event':
             pageTitles = [pagename]
-        print(pageTitles)
         LoD = wikiFile.exportWikiSonToLOD(pageTitles, 'Event')
-        print(LoD)
+        if self.debug:
+            print(pageTitles)
+            print(LoD)
         filepath = "%s/.ptp/csvs/%s" % (home, pagename)
         self.ensureDirectoryExists(filepath)
         CSV.storeToCSVFile(LoD, filepath)
@@ -356,36 +360,36 @@ class WebServer(AppWrap):
         Returns:
             Nothing
         '''
-        #Only personal testing
-        wikiFile = WikiFileManager('ormk')
-        #ToDo: Change to orclone
+        wikiId=self.getWikiIdForLoggedInUser()
+        wikiFileManager = WikiFileManager(wikiId)
         with tempfile.TemporaryDirectory() as tmpdir:
             # The context manager will automatically delete this directory after this section
             print(f"Created a temporary directory: {tmpdir}")
             filepath = os.path.join(tmpdir, csv.filename)
             csv.save(filepath)
             csvStr = CSV.readFile(filepath)
-        print(csvStr)
         csvList = csvStr.split('\n')
         csvList = list(filter(None, csvList))
         headers = csvList[0].split(',')
-        print(headers)
         LoD = CSV.fromCSV(csvStr)
-        print(LoD)
+        if self.debug:
+            print(csvStr)
+            print(headers)
+            print(LoD)
         eventList = EventList()
         eventList.fromLoD(LoD)
-        wikiFile.importLODtoWiki(LoD, 'Event')
+        wikiFileManager.importLODtoWiki(LoD, 'Event')
 
     def getCsvFromUser(self):
         '''
         Function to get csv from user and push to wiki
         '''
         if request.method == "POST":
-
             if request.files:
                 csv = request.files["csv"]
                 self.processCsvToWiki(csv)
-                return redirect('https://confident.dbis.rwth-aachen.de/or/index.php?title=Main_Page')
+                wikiURL=self.getWikiURLForLoggedInUser()
+                return redirect(wikiURL)
         menuList = self.adminMenuList("OpenResearch")
         html = render_template('upload.html',menuList=menuList)
         return html
@@ -468,6 +472,24 @@ class WebServer(AppWrap):
                 smw=SMWClient(wikiclient.getSite())
                 break
         return wuser,wikiclient,smw
+
+    def getWikiIdForLoggedInUser(self):
+        '''
+        Returns the wikiID of the loggedin user
+        e.g. bob@myor is logged in then myor is retured
+        '''
+        wikiUser, wikiclient, smw = self.getSMWForLoggedInUser()
+        wikiId = wikiUser.wikiId
+        return wikiId
+
+    def getWikiURLForLoggedInUser(self):
+        '''
+        Returns the wiki URL of the loggedin user
+        e.g. bob@myor is logged in then returns the url for the myor wiki (defined in the .ini file)
+        '''
+        wikiUser, wikiclient, smw = self.getSMWForLoggedInUser()
+        wikiURL=wikiUser.getWikiUrl()
+        return wikiURL
         
     def showLambdaActions(self):
         '''
