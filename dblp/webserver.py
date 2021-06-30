@@ -151,7 +151,9 @@ class WebServer(AppWrap):
         Updates the OpenResearch Cache file
         '''
         eventList=EventList()
-        eventList.fromCache(self.wikiUser,force=True)
+        wikiId = self.getWikiIdForLoggedInUser()
+        wikiUser = hf.getSMW_WikiUser(wikiId)
+        eventList.fromCache(wikiUser,force=True)
         return eventList
 
     def updateOrEntityLists(self):
@@ -319,7 +321,6 @@ class WebServer(AppWrap):
             filepath for the generated CSV.
         '''
         home = expanduser("~")
-        wikiSonlookup = {'event': 'Event', 'eventseries': 'Event series'}
         entitynamelower = entityname.lower()
         wikiId=self.getWikiIdForLoggedInUser()
         wikiFile = WikiFileManager(wikiId)
