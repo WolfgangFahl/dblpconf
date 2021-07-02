@@ -4,11 +4,10 @@ Created on 2021-01-26
 @author: wf
 '''
 import unittest
+from ormigrate.toolbox import HelperFunctions as hf
 from dblp.webserver import WebServer
 import os.path
-import time
 import datetime
-from openresearch.event import EventList
 import tests.test_dblp
 import getpass
 
@@ -69,8 +68,9 @@ class TestWebServer(unittest.TestCase):
         '''
         if getpass.getuser()!="wf":
             return
-        web = WebServer()
-        eventList = web.updateOrCache()
+        web = self.web
+        testUser = hf.getSMW_WikiUser("orclone")
+        eventList = web.updateOrCache(testUser)
         filepath = eventList.getJsonFile()
         lastModifyTime = datetime.datetime.fromtimestamp(os.path.getmtime(filepath))
         now = datetime.datetime.now()
@@ -83,8 +83,9 @@ class TestWebServer(unittest.TestCase):
         '''
         if getpass.getuser()!="wf":
             return
+        testWikiId="orclone"
         web = WebServer()
-        file = web.generateCSV('Event', '3DUI 2020')
+        file = web.generateCSV('Event', '3DUI 2020', testWikiId)
         self.assertIsNotNone(file)
         pass
 

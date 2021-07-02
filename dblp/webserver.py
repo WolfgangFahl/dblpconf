@@ -3,6 +3,7 @@ Created on 2020-12-30
 
 @author: wf
 '''
+from ormigrate.issue220_location import LocationFixer
 from wikifile.wikiFileManager import WikiFileManager
 from fb4.app import AppWrap
 from fb4.login_bp import LoginBluePrint
@@ -143,16 +144,19 @@ class WebServer(AppWrap):
         self.updateOrEntityLists()
 
     def updateCache(self):
-        self.updateOrCache()
-        return self.showOpenResearchData('Event')
-
-    def updateOrCache(self):
-        '''
-        Updates the OpenResearch Cache file
-        '''
-        eventList=EventList()
         wikiId = self.getWikiIdForLoggedInUser()
         wikiUser = hf.getSMW_WikiUser(wikiId)
+        self.updateOrCache(wikiUser)
+        return self.showOpenResearchData('Event')
+
+    def updateOrCache(self, wikiUser:WikiUser):
+        '''
+        Updates the OpenResearch Cache file
+
+        Args:
+            wikiUser(WikiUser): wikiUser that should be used to load the cache if cache not already present
+        '''
+        eventList=EventList()
         eventList.fromCache(wikiUser,force=True)
         return eventList
 
@@ -311,18 +315,18 @@ class WebServer(AppWrap):
             os.makedirs(directory)
 
 
-    def generateCSV(self,entityname,pagename):
+    def generateCSV(self,entityname:str,pagename:str, wikiId:str):
         '''
         generates CSV file to push to User for the given entity and pagename
         Args:
             entityname(str): Name of the OR entity e.g Event, EventSeries
             pagename(stR): wiki page name
+            wikiId(str): id of the wiki from which the csv should be generated
         Returns:
             filepath for the generated CSV.
         '''
         home = expanduser("~")
         entitynamelower = entityname.lower()
-        wikiId=self.getWikiIdForLoggedInUser()
         wikiFile = WikiFileManager(wikiId)
         pageTitles = []
         if entitynamelower == "eventseries":
@@ -349,7 +353,8 @@ class WebServer(AppWrap):
         '''
         Function to send the csv file to the webpage for the user to download
         '''
-        filepath=self.generateCSV(entityname,pagename)
+        wikiId = self.getWikiIdForLoggedInUser()
+        filepath=self.generateCSV(entityname,pagename,wikiId)
         return send_file(filepath+'.csv', as_attachment=True,cache_timeout=0)
 
 
@@ -379,6 +384,8 @@ class WebServer(AppWrap):
             print(LoD)
         eventList = EventList()
         eventList.fromLoD(LoD)
+        wuser,wikiclient,smw=self.getSMWForLoggedInUser()
+        LocationFixer(wikiclient).fixEventRecords(LoD)
         wikiFileManager.importLODtoWiki(LoD, 'Event')
 
     def getCsvFromUser(self):
