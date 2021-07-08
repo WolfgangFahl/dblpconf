@@ -1,0 +1,4 @@
+#!/bin/bash
+# WF 2021-07-08
+# run the docker image
+docker run -p 8252:8252 --name dblpconf -v "$HOME/.dblp:/root/.dblp"  -d dblpconf 

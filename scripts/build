@@ -1,0 +1,3 @@
+#!/bin/bash
+# WF 2021-07-08
+docker build -t dblpconf:latest .
