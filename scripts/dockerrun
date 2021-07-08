@@ -1,4 +1,14 @@
 #!/bin/bash
 # WF 2021-07-08
 # run the docker image
-docker run -p 8252:8252 --name dblpconf -v "$HOME/.dblp:/root/.dblp"  -d dblpconf 
+docker container ls -af 'name=dblpconf'
+if [ $? -eq 0 ]
+then
+    echo "stopping and removing running container"
+    docker stop dblpconf
+    docker rm dblpconf
+fi
+docker run -p 8252:8252 --name dblpconf -v "$HOME/.dblp:/root/.dblp" -v "$HOME/.mediawiki-japi:/root/.mediawiki-japi"  -d dblpconf
+# start a bash for courtes
+echo "bashing into container"
+docker exec -it dblpconf /bin/bash
