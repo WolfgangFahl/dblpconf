@@ -17,9 +17,9 @@ class TestWebServer(unittest.TestCase):
         '''
         test the webserver
         ''' 
-        if getpass.getuser()!="wf":
-            return
         self.debug=False
+        sourceWikiId='orclone'
+        targetWikiId='myor'
         mock=True
         dblp=tests.test_dblp.TestDblp.getMockedDblp(mock, debug=self.debug) 
         self.web=WebServer(dblp)
@@ -27,10 +27,20 @@ class TestWebServer(unittest.TestCase):
         app.config['TESTING'] = True
         app.config['WTF_CSRF_ENABLED'] = False
         app.config['DEBUG'] = False
+        app.app_context().push()
         self.app = app.test_client()
+        # https://stackoverflow.com/questions/44417552/working-outside-of-application-context-flaskclient-object-has-no-attribute-app
+        
+        self.web.init(sourceWikiId, targetWikiId)
         pass
     
-    def getResponse(self,query):
+    def getResponse(self,query:str):
+        '''
+        get a response from the app for the given query string
+        
+        Args:
+            query(str): the html query string to fetch the response for
+        '''
         response=self.app.get(query)
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.data is not None)
@@ -46,8 +56,6 @@ class TestWebServer(unittest.TestCase):
         '''
         test the samples handling
         '''
-        if getpass.getuser()!="wf":
-            return
         html=self.getResponse("/sample/dblp/article/100")
         self.assertTrue("<th> publtype </th>" in html)
         pass
@@ -56,8 +64,6 @@ class TestWebServer(unittest.TestCase):
         '''
         test OPENSRESEARCH event list
         '''
-        if getpass.getuser()!="wf":
-            return
         html=self.getResponse("/openresearch/Event")
         self.assertTrue("acronym" in html)
         pass
@@ -66,8 +72,6 @@ class TestWebServer(unittest.TestCase):
         '''
         test for the issue #18
         '''
-        if getpass.getuser()!="wf":
-            return
         web = self.web
         testUser = hf.getSMW_WikiUser("orclone")
         eventList = web.updateOrCache(testUser)
@@ -81,8 +85,6 @@ class TestWebServer(unittest.TestCase):
         '''
         test OPENSRESEARCH csv generation
         '''
-        if getpass.getuser()!="wf":
-            return
         testWikiId="orclone"
         web = WebServer()
         file = web.generateCSV('Event', '3DUI 2020', testWikiId)

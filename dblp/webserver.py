@@ -38,19 +38,19 @@ class WebServer(AppWrap):
     dblp conf webserver
     '''
     
-    def __init__(self, host='0.0.0.0', port=8252, debug=False,dblp=None):
+    def __init__(self, host='0.0.0.0', port=8252, verbose=True,debug=False,dblp=None):
         '''
         constructor
         
         Args:
-            wikiId(str): id of the wiki to use as a CMS backend
             host(str): flask host
             port(int): the port to use for http connections
             debug(bool): True if debugging should be switched on
+            verbose(bool): True if verbose logging should be switched on
             dblp(Dblp): preconfigured dblp access (e.g. for mock testing)
         '''
         self.debug=debug
-        self.wikiUser = hf.getSMW_WikiUser('orclone')
+        self.verbose=verbose
         self.dblp=dblp
         scriptdir = os.path.dirname(os.path.abspath(__file__))
         template_folder=scriptdir + '/../templates'
@@ -65,7 +65,6 @@ class WebServer(AppWrap):
         #
         @self.app.before_first_request
         def before_first_request_func():
-            self.initDB()
             loginMenuList=self.adminMenuList("Login")
             self.loginBluePrint.setLoginArgs(menuList=loginMenuList)
             
@@ -113,6 +112,32 @@ class WebServer(AppWrap):
         @self.app.route('/lambdactions',methods=['GET', 'POST'])
         def showLambdaActions():
             return self.showLambdaActions()
+ 
+    def init(self,sourceWikiId,targetWikiId):
+        '''
+        
+        '''
+        self.initDB()
+        self.sourceWikiId=sourceWikiId
+        self.targetWikiId=targetWikiId
+        self.initEventCorpus(self.sourceWikiId)
+           
+    def initEventCorpus(self,wikiId):
+        '''
+        initialize my eventCorpus
+    
+        Args:
+             wikiId(str): id of the wiki to use as a CMS backend
+        '''
+        self.wikiUser = hf.getSMW_WikiUser(wikiId)
+        self.eventCorpus=EventCorpus()
+        self.eventCorpus.fromWikiUser(self.wikiUser)
+        countryList=CountryList()
+        countryList.getDefault()
+        self.orEntityLists={}
+        for entityList in [self.eventCorpus.eventList,self.eventCorpus.eventSeriesList,countryList]:
+            self.orEntityLists[entityList.getEntityName()]=entityList
+ 
         
     def getPTPDB(self):
         '''
@@ -130,7 +155,8 @@ class WebServer(AppWrap):
         '''
         log the given message
         '''
-        print(msg)
+        if self.verbose:
+            print(msg)
         
     def initDB(self):
         '''
@@ -148,7 +174,6 @@ class WebServer(AppWrap):
         ptpDB=self.getPTPDB()
         if ptpDB is not None:
             self.dbs['ptp']=DB(ptpDB)
-        self.updateOrEntityLists()
 
     def updateCache(self):
         '''
@@ -171,17 +196,6 @@ class WebServer(AppWrap):
         eventList.fromCache(wikiUser,force=True)
         return eventList
 
-    def updateOrEntityLists(self):
-        '''
-        preload the open Reserch entities
-        '''
-        self.eventCorpus=EventCorpus()
-        self.eventCorpus.fromWikiUser(self.wikiUser)
-        countryList=CountryList()
-        countryList.getDefault()
-        self.orEntityLists={}
-        for entityList in [self.eventCorpus.eventList,self.eventCorpus.eventSeriesList,countryList]:
-            self.orEntityLists[entityList.getEntityName()]=entityList
         
     def getUserNameForWikiUser(self,wuser:WikiUser)->str:
         '''
@@ -336,14 +350,11 @@ class WebServer(AppWrap):
         Returns:
             filepath for the generated CSV.
         '''
-        home = expanduser("~")
         entitynamelower = entityname.lower()
         wikiFile = WikiFileManager(wikiId)
         pageTitles = []
         if entitynamelower == "eventseries":
-            eventCorpus = EventCorpus()
-            eventCorpus.fromWikiUser(self.wikiUser)
-            eventsInSeries = eventCorpus.getEventsInSeries(pagename)
+            eventsInSeries = self.eventCorpus.getEventsInSeries(pagename)
             pageTitles = []
             for event in eventsInSeries:
                 if hasattr(event,'pageTitle'):
@@ -354,6 +365,8 @@ class WebServer(AppWrap):
         if self.debug:
             print(pageTitles)
             print(LoD)
+            
+        home = expanduser("~")    
         filepath = "%s/.ptp/csvs/%s" % (home, pagename)
         self.ensureDirectoryExists(filepath)
         CSV.storeToCSVFile(LoD, filepath)
@@ -729,6 +742,11 @@ if __name__ == '__main__':
     # construct the web application    
     web=WebServer()
     parser=web.getParser(description="dblp conference webservice")
+    parser.add_argument('-s', '--source', default="orclone",help="wikiId of the source wiki [default: %(default)s]")   
+    parser.add_argument('-t', '--target', default="myor",help="wikiId of the target wiki [default: %(default)s]") 
+    parser.add_argument('--verbose',default=True,action="store_true",help="should relevant server actions be logged [default: %(default)s]")
     args=parser.parse_args()
     web.optionalDebug(args)
+    web.verbose=args.verbose
+    web.init(args.source,args.target)
     web.run(args)
