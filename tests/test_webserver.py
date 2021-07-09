@@ -12,6 +12,9 @@ import tests.test_dblp
 import getpass
 
 class TestWebServer(unittest.TestCase):
+    '''
+    Test the dblpconf web server
+    '''
 
     def setUp(self):
         '''
@@ -62,7 +65,7 @@ class TestWebServer(unittest.TestCase):
 
     def testOREvents(self):
         '''
-        test OPENSRESEARCH event list
+        test OPEN RESEARCH event list
         '''
         html=self.getResponse("/openresearch/Event")
         self.assertTrue("acronym" in html)

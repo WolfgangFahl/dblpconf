@@ -51,6 +51,7 @@ class WebServer(AppWrap):
         '''
         self.debug=debug
         self.verbose=verbose
+        self.dbInitialized=False
         self.dblp=dblp
         scriptdir = os.path.dirname(os.path.abspath(__file__))
         template_folder=scriptdir + '/../templates'
@@ -115,7 +116,7 @@ class WebServer(AppWrap):
  
     def init(self,sourceWikiId,targetWikiId):
         '''
-        
+        initialize me with the given sourceWikiId and targetWikiId
         '''
         self.initDB()
         self.sourceWikiId=sourceWikiId
@@ -129,6 +130,7 @@ class WebServer(AppWrap):
         Args:
              wikiId(str): id of the wiki to use as a CMS backend
         '''
+        self.log(f"Initializing event Corpus for source Wiki {wikiId}")
         self.wikiUser = hf.getSMW_WikiUser(wikiId)
         self.eventCorpus=EventCorpus()
         self.eventCorpus.fromWikiUser(self.wikiUser)
@@ -163,6 +165,8 @@ class WebServer(AppWrap):
         initialize the database
         '''
         self.log("Initializing Database ...")
+        if self.dbInitialized:
+            return 
         self.db.drop_all()
         self.db.create_all()
         self.initUsers()
@@ -174,6 +178,8 @@ class WebServer(AppWrap):
         ptpDB=self.getPTPDB()
         if ptpDB is not None:
             self.dbs['ptp']=DB(ptpDB)
+        self.dbInitialized=True
+         
 
     def updateCache(self):
         '''
@@ -213,8 +219,9 @@ class WebServer(AppWrap):
     def initUsers(self):
         '''
         initialize my users
-        '''
+        '''  
         wusers=WikiUser.getWikiUsers()
+        self.log(f"Initializing {len(wusers)} users")
         for userid,wuser in enumerate(wusers.values()):
             username=self.getUserNameForWikiUser(wuser)
             self.loginBluePrint.addUser(self.db,username,wuser.getPassword(),userid=userid)
