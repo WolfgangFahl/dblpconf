@@ -125,11 +125,18 @@ class WebServer(AppWrap):
         if os.path.isfile(dbname):
             sqlDB=SQLDB(dbname=dbname,debug=self.debug,errorDebug=True,check_same_thread=False)
         return sqlDB
+    
+    def log(self,msg):
+        '''
+        log the given message
+        '''
+        print(msg)
         
     def initDB(self):
         '''
         initialize the database
         '''
+        self.log("Initializing Database ...")
         self.db.drop_all()
         self.db.create_all()
         self.initUsers()
@@ -144,8 +151,12 @@ class WebServer(AppWrap):
         self.updateOrEntityLists()
 
     def updateCache(self):
+        '''
+        update the cache for the given wiki user
+        '''
         wikiId = self.getWikiIdForLoggedInUser()
         wikiUser = hf.getSMW_WikiUser(wikiId)
+        self.log(f"Updating cache from {wikiId}")
         self.updateOrCache(wikiUser)
         return self.showOpenResearchData('Event')
 
