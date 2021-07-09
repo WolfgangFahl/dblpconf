@@ -57,6 +57,7 @@ class WebServer(AppWrap):
         template_folder=scriptdir + '/../templates'
         super().__init__(host=host,port=port,debug=debug,template_folder=template_folder)
         self.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+        self.app.app_context().push()
         db.init_app(self.app)
         self.db=db
         self.loginBluePrint=LoginBluePrint(self.app,'login')
@@ -171,7 +172,7 @@ class WebServer(AppWrap):
         self.db.create_all()
         self.initUsers()
         if self.dblp is None:
-            self.dblp=Dblp()
+            self.dblp=Dblp(verbose=self.verbose)
         self.dbs={}
         self.dbs['dblp']=DB(self.dblp.getXmlSqlDB())
         self.sqlDB=self.dbs['dblp'].sqlDB
@@ -221,7 +222,7 @@ class WebServer(AppWrap):
         initialize my users
         '''  
         wusers=WikiUser.getWikiUsers()
-        self.log(f"Initializing {len(wusers)} users")
+        self.log(f"Initializing {len(wusers)} users ...")
         for userid,wuser in enumerate(wusers.values()):
             username=self.getUserNameForWikiUser(wuser)
             self.loginBluePrint.addUser(self.db,username,wuser.getPassword(),userid=userid)
@@ -337,11 +338,26 @@ class WebServer(AppWrap):
         title=f"entity: {entityName} pageName: {pageName} url for wikiuser: {wikiUser.getWikiUrl()}"
         return render_template("orpage.html",title=title,content=content,menuList=menuList)
         
-    def fixPageTitle(self,pageTitle):
+    def fixPageTitle(self,pageTitle:str):
+        '''
+        fix the given pageTitle
+        
+        Args:
+            pageTitle(str): a MediaWiki pageTitle
+            
+        Return:
+            a fixed version 
+        '''
         result=pageTitle.replace(" ","_")
         return result
 
-    def ensureDirectoryExists(self,file_path):
+    def ensureDirectoryExists(self,file_path:str):
+        '''
+        check that the given path exists and otherwise create it
+        
+        Args
+            file_path(str): the path to check
+        '''
         directory = os.path.dirname(file_path)
         if not os.path.exists(directory):
             os.makedirs(directory)
@@ -350,10 +366,12 @@ class WebServer(AppWrap):
     def generateCSV(self,entityname:str,pagename:str, wikiId:str):
         '''
         generates CSV file to push to User for the given entity and pagename
+        
         Args:
             entityname(str): Name of the OR entity e.g Event, EventSeries
-            pagename(stR): wiki page name
+            pagename(str): wiki page name
             wikiId(str): id of the wiki from which the csv should be generated
+        
         Returns:
             filepath for the generated CSV.
         '''
@@ -383,6 +401,10 @@ class WebServer(AppWrap):
     def downloadCsv(self, entityname, pagename):
         '''
         Function to send the csv file to the webpage for the user to download
+        
+        Args:
+            entityname(str): the entityName to download
+            pagename(str): the page for which to start the download
         '''
         wikiId = self.getWikiIdForLoggedInUser()
         filepath=self.generateCSV(entityname,pagename,wikiId)

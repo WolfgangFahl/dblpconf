@@ -16,26 +16,31 @@ class TestWebServer(unittest.TestCase):
     Test the dblpconf web server
     '''
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         '''
         test the webserver
         ''' 
-        self.debug=False
+        cls.debug=False
         sourceWikiId='orclone'
         targetWikiId='myor'
         mock=True
-        dblp=tests.test_dblp.TestDblp.getMockedDblp(mock, debug=self.debug) 
-        self.web=WebServer(dblp)
-        app=self.web.app
+        dblp=tests.test_dblp.TestDblp.getMockedDblp(mock, debug=cls.debug) 
+        cls.web=WebServer(dblp)
+        app=cls.web.app
         app.config['TESTING'] = True
         app.config['WTF_CSRF_ENABLED'] = False
         app.config['DEBUG'] = False
-        app.app_context().push()
-        self.app = app.test_client()
+        cls.app = app.test_client()
         # https://stackoverflow.com/questions/44417552/working-outside-of-application-context-flaskclient-object-has-no-attribute-app
         
-        self.web.init(sourceWikiId, targetWikiId)
+        cls.web.init(sourceWikiId, targetWikiId)
         pass
+    
+    def setUp(self):
+        self.debug=TestWebServer.debug
+        self.app=TestWebServer.app
+        self.web=TestWebServer.web
     
     def getResponse(self,query:str):
         '''
