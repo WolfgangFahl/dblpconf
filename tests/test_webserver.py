@@ -10,6 +10,7 @@ import os.path
 import datetime
 import tests.test_dblp
 import getpass
+import csv
 
 class TestWebServer(unittest.TestCase):
     '''

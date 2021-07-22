@@ -3,7 +3,6 @@ Created on 2020-12-30
 
 @author: wf
 '''
-from ormigrate.issue220_location import LocationFixer
 from wikifile.wikiFileManager import WikiFileManager
 from fb4.app import AppWrap
 from fb4.login_bp import LoginBluePrint
@@ -21,7 +20,7 @@ from os.path import expanduser
 
 import os
 import json
-import tempfile
+
 
 from action.wikiaction import WikiAction
 from wikibot.wikiuser import WikiUser
@@ -411,7 +410,7 @@ class WebServer(AppWrap):
         return send_file(filepath+'.csv', as_attachment=True,cache_timeout=0)
 
 
-    def processCsvToWiki(self,csv):
+    def importCsvToWiki(self,csv):
         '''
         processes the given csv object to convert to LoD and push it to the wiki with regard to self.wikiUser
         Args:
@@ -420,26 +419,7 @@ class WebServer(AppWrap):
             Nothing
         '''
         wikiId=self.getWikiIdForLoggedInUser()
-        wikiFileManager = WikiFileManager(wikiId)
-        with tempfile.TemporaryDirectory() as tmpdir:
-            # The context manager will automatically delete this directory after this section
-            print(f"Created a temporary directory: {tmpdir}")
-            filepath = os.path.join(tmpdir, csv.filename)
-            csv.save(filepath)
-            csvStr = CSV.readFile(filepath)
-        csvList = csvStr.split('\n')
-        csvList = list(filter(None, csvList))
-        headers = csvList[0].split(',')
-        LoD = CSV.fromCSV(csvStr)
-        if self.debug:
-            print(csvStr)
-            print(headers)
-            print(LoD)
-        eventList = EventList()
-        eventList.fromLoD(LoD)
-        wuser,wikiclient,smw=self.getSMWForLoggedInUser()
-        LocationFixer(wikiclient).fixEventRecords(LoD)
-        wikiFileManager.importLODtoWiki(LoD, 'Event')
+        
 
     def getCsvFromUser(self):
         '''
@@ -448,7 +428,7 @@ class WebServer(AppWrap):
         if request.method == "POST":
             if request.files:
                 csv = request.files["csv"]
-                self.processCsvToWiki(csv)
+                self.importCsvToWiki(csv)
                 wikiURL=self.getWikiURLForLoggedInUser()
                 return redirect(wikiURL)
         menuList = self.adminMenuList("OpenResearch")
@@ -503,7 +483,7 @@ class WebServer(AppWrap):
                 print(record) # what?
         lodKeys = self.get_prop_list_from_samples(lod)
         lodKeys =["orpage"] + lodKeys
-        tableHeaders = [x.replace("PainRating", "\nPainRating") for x in lodKeys]   # Easy hack for the time being
+        tableHeaders = [x.replace("PainRating", "\nPainRating") for x in lodKeys]   # FIXME: Easy hack for the time being
         return render_template('sample.html',title=entityName,menuList=menuList, dictList=lod, lodKeys=lodKeys, tableHeaders=tableHeaders)
 
     @staticmethod
