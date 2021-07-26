@@ -18,6 +18,6 @@ pylodstorage>= 0.0.33
 # parser
 lxml
 # https://github.com/SmartDataAnalytics/OpenResearch
-OpenResearchMigration>= 0.0.22
+OpenResearchMigration>= 0.0.24
 # https://pypi.org/project/wikirender/
 wikirender>=0.0.10

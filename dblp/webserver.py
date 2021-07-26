@@ -28,9 +28,9 @@ from wikibot.wikiclient import WikiClient
 from wikibot.smw import SMW,SMWClient
 from wtforms import HiddenField, SubmitField, StringField, SelectField
 from openresearch.eventcorpus import EventCorpus
-from openresearch.event import CountryList, Event, EventSeries, EventList
+from openresearch.event import Event, EventSeries, EventList
 from ormigrate.toolbox import HelperFunctions as hf
-from ormigrate.rating import Rating
+from ormigrate.smw.rating import Rating
 
 class WebServer(AppWrap):
     ''' 
@@ -99,7 +99,6 @@ class WebServer(AppWrap):
         def showOpenResearchData(entity):
             return self.showOpenResearchData(entity)
 
-        @login_required
         @self.app.route('/openresearch/<entity>/<pagename>/download', methods=['GET', 'POST'])
         def downloadCsv(entity,pagename):
             return self.downloadCsv(entity,pagename)
@@ -134,10 +133,10 @@ class WebServer(AppWrap):
         self.wikiUser = hf.getSMW_WikiUser(wikiId)
         self.eventCorpus=EventCorpus()
         self.eventCorpus.fromWikiUser(self.wikiUser)
-        countryList=CountryList()
-        countryList.getDefault()
+        # countryList=CountryList()
+        # countryList.getDefault()
         self.orEntityLists={}
-        for entityList in [self.eventCorpus.eventList,self.eventCorpus.eventSeriesList,countryList]:
+        for entityList in [self.eventCorpus.eventList,self.eventCorpus.eventSeriesList]:
             self.orEntityLists[entityList.getEntityName()]=entityList
  
         
@@ -362,41 +361,6 @@ class WebServer(AppWrap):
             os.makedirs(directory)
 
 
-    def generateCSV(self,entityname:str,pagename:str, wikiId:str):
-        '''
-        generates CSV file to push to User for the given entity and pagename
-        
-        Args:
-            entityname(str): Name of the OR entity e.g Event, EventSeries
-            pagename(str): wiki page name
-            wikiId(str): id of the wiki from which the csv should be generated
-        
-        Returns:
-            filepath for the generated CSV.
-        '''
-        entitynamelower = entityname.lower()
-        wikiFile = WikiFileManager(wikiId)
-        pageTitles = []
-        if entitynamelower == "eventseries":
-            eventsInSeries = self.eventCorpus.getEventsInSeries(pagename)
-            pageTitles = []
-            for event in eventsInSeries:
-                if hasattr(event,'pageTitle'):
-                    pageTitles.append(event.pageTitle)
-        elif entitynamelower == 'event':
-            pageTitles = [pagename]
-        LoD = wikiFile.exportWikiSonToLOD(pageTitles, 'Event')
-        if self.debug:
-            print(pageTitles)
-            print(LoD)
-            
-        home = expanduser("~")    
-        filepath = "%s/.ptp/csvs/%s" % (home, pagename)
-        self.ensureDirectoryExists(filepath)
-        CSV.storeToCSVFile(LoD, filepath)
-        return filepath
-
-
     def downloadCsv(self, entityname, pagename):
         '''
         Function to send the csv file to the webpage for the user to download
@@ -405,20 +369,13 @@ class WebServer(AppWrap):
             entityname(str): the entityName to download
             pagename(str): the page for which to start the download
         '''
-        wikiId = self.getWikiIdForLoggedInUser()
-        filepath=self.generateCSV(entityname,pagename,wikiId)
-        return send_file(filepath+'.csv', as_attachment=True,cache_timeout=0)
-
-
-    def importCsvToWiki(self,csv):
-        '''
-        processes the given csv object to convert to LoD and push it to the wiki with regard to self.wikiUser
-        Args:
-            csv(TempFile): csv file uploaded by user
-        Returns:
-            Nothing
-        '''
-        wikiId=self.getWikiIdForLoggedInUser()
+        if entityname == 'Event':
+            filepath=self.eventCorpus.getEventCsv(pagename)
+        elif entityname == 'EventSeries':
+            filepath=self.eventCorpus.getEventSeriesCsv(pagename)
+        if self.debug:
+            print(filepath)
+        return send_file(filepath, as_attachment=True,cache_timeout=0)
         
 
     def getCsvFromUser(self):
@@ -428,7 +385,7 @@ class WebServer(AppWrap):
         if request.method == "POST":
             if request.files:
                 csv = request.files["csv"]
-                self.importCsvToWiki(csv)
+                # TODO: Process file to wikiFile using eventCorpus
                 wikiURL=self.getWikiURLForLoggedInUser()
                 return redirect(wikiURL)
         menuList = self.adminMenuList("OpenResearch")

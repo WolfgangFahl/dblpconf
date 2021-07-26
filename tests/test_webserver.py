@@ -94,10 +94,10 @@ class TestWebServer(unittest.TestCase):
         '''
         test OPENSRESEARCH csv generation
         '''
-        testWikiId="orclone"
-        web = WebServer()
-        file = web.generateCSV('Event', '3DUI 2020', testWikiId)
-        self.assertIsNotNone(file)
+        eventFile = self.getResponse("/openresearch/Event/3DUI 2016/download")
+        self.assertIsNotNone(eventFile)
+        eventSeriesFile = self.getResponse("/openresearch/EventSeries/3DUI/download")
+        self.assertIsNotNone(eventSeriesFile)
         pass
 
     def testORCountries(self):
