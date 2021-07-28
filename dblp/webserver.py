@@ -14,6 +14,7 @@ from flask_wtf import FlaskForm
 from lodstorage.query import QueryManager
 from lodstorage.sparql import SPARQL
 from lodstorage.sql import SQLDB
+from lodstorage.storageconfig import StorageConfig
 from lodstorage.csv import CSV
 from dblp.dblpxml import Dblp
 from os.path import expanduser
@@ -27,8 +28,8 @@ from wikibot.wikiuser import WikiUser
 from wikibot.wikiclient import WikiClient
 from wikibot.smw import SMW,SMWClient
 from wtforms import HiddenField, SubmitField, StringField, SelectField
-from openresearch.eventcorpus import EventCorpus
-from openresearch.event import Event, EventSeries, EventList
+from datasources.openresearch import OREventCorpus
+from datasources.openresearch import OREvent, OREventSeries, OREventManager
 from ormigrate.toolbox import HelperFunctions as hf
 from ormigrate.smw.rating import Rating
 
@@ -120,24 +121,25 @@ class WebServer(AppWrap):
         self.initDB()
         self.sourceWikiId=sourceWikiId
         self.targetWikiId=targetWikiId
-        self.initEventCorpus(self.sourceWikiId)
+        self.initOREventCorpus(self.sourceWikiId)
            
-    def initEventCorpus(self,wikiId):
+    def initOREventCorpus(self,wikiId):
         '''
-        initialize my eventCorpus
+        initialize my OREventCorpus
     
         Args:
              wikiId(str): id of the wiki to use as a CMS backend
         '''
+        self.config = StorageConfig.getDefault()
         self.log(f"Initializing event Corpus for source Wiki {wikiId}")
         self.wikiUser = hf.getSMW_WikiUser(wikiId)
-        self.eventCorpus=EventCorpus()
-        self.eventCorpus.fromWikiUser(self.wikiUser)
+        self.OREventCorpus=OREventCorpus(self.config)
+        self.OREventCorpus.fromWikiUser(self.wikiUser)
         # countryList=CountryList()
         # countryList.getDefault()
         self.orEntityLists={}
-        for entityList in [self.eventCorpus.eventList,self.eventCorpus.eventSeriesList]:
-            self.orEntityLists[entityList.getEntityName()]=entityList
+        for entityList in [self.OREventCorpus.eventManager,self.OREventCorpus.eventSeriesManager]:
+            self.orEntityLists[entityList.entityName]=entityList
  
         
     def getPTPDB(self):
@@ -197,9 +199,10 @@ class WebServer(AppWrap):
         Args:
             wikiUser(WikiUser): wikiUser that should be used to load the cache if cache not already present
         '''
-        eventList=EventList()
-        eventList.fromCache(wikiUser,force=True)
-        return eventList
+        #ToDo: Refactor once force is in LodStorage
+        orEventManager=OREventManager(config=self.config)
+        orEventManager.fromCache(wikiUser,force=True)
+        return orEventManager
 
         
     def getUserNameForWikiUser(self,wuser:WikiUser)->str:
@@ -370,9 +373,9 @@ class WebServer(AppWrap):
             pagename(str): the page for which to start the download
         '''
         if entityname == 'Event':
-            filepath=self.eventCorpus.getEventCsv(pagename)
+            filepath=self.OREventCorpus.getEventCsv(pagename)
         elif entityname == 'EventSeries':
-            filepath=self.eventCorpus.getEventSeriesCsv(pagename)
+            filepath=self.OREventCorpus.getEventSeriesCsv(pagename)
         if self.debug:
             print(filepath)
         return send_file(filepath, as_attachment=True,cache_timeout=0)
@@ -385,7 +388,7 @@ class WebServer(AppWrap):
         if request.method == "POST":
             if request.files:
                 csv = request.files["csv"]
-                # TODO: Process file to wikiFile using eventCorpus
+                # TODO: Process file to wikiFile using OREventCorpus
                 wikiURL=self.getWikiURLForLoggedInUser()
                 return redirect(wikiURL)
         menuList = self.adminMenuList("OpenResearch")
@@ -404,10 +407,11 @@ class WebServer(AppWrap):
         menuList = self.adminMenuList("OpenResearch")
 
         rating=None
-        if entityName == "Event":
-            rating=Event.rateMigration
-        if entityName == "EventSeries":
-            rating=EventSeries.rateMigration
+        #ToDo Get Event ratings
+        # if entityName == "Event":
+        #     rating=Event.rateMigration
+        # if entityName == "EventSeries":
+        #     rating=EventSeries.rateMigration
         entityList=self.orEntityLists[entityName]
         # get the List of Dicts with ratings for the given entityList
         lod,errors =  entityList.getRatedLod(ratingCallback=rating)
