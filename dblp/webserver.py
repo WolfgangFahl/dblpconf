@@ -28,7 +28,7 @@ from wtforms import HiddenField, SubmitField, StringField, SelectField
 from datasources.openresearch import OREventCorpus
 from datasources.openresearch import OREvent, OREventSeries, OREventManager
 from ormigrate.toolbox import HelperFunctions as hf
-from ormigrate.smw.rating import Rating
+from corpus.lookup import CorpusLookup
 
 class WebServer(AppWrap):
     ''' 
@@ -115,7 +115,7 @@ class WebServer(AppWrap):
         '''
         initialize me with the given sourceWikiId and targetWikiId
         '''
-        self.initDB()
+        self.initConferenceCorpus()
         self.sourceWikiId=sourceWikiId
         self.targetWikiId=targetWikiId
         self.initOREventCorpus(self.sourceWikiId)
@@ -151,7 +151,10 @@ class WebServer(AppWrap):
         '''
         initialize the conference Corpus
         '''
-        self.log("Initializing Database ...")
+        self.log("Initializing Conference Corpus ...")
+        lookup = CorpusLookup(lookupIds=["orclone", "dblp"])
+        orDataSource = lookup.getDataSource("orclone")
+        dblpDataSource = lookup.getDataSource("dblp")
         if self.dbInitialized:
             # TODO - refactor to
             pass
@@ -636,39 +639,41 @@ class ActionForm(FlaskForm):
     actionTableSelection = HiddenField()
     submit = SubmitField("execute")
 
-class RatingWidget(Widget):
-    '''
-    Displays a rating
-    '''
 
-    def __init__(self, rating:Rating):
-        super().__init__()
-        self.rating = rating
-
-    @staticmethod
-    def lookupPainImage(rating: int):
-        '''Returns html image tag to the corresponding pain rating'''
-        painImages = {
-             0: "http://rq.bitplan.com/images/rq/a/a3/Pain0.png",
-             1: "https://rq.bitplan.com/images/rq/0/01/Pain1.png",
-             2: "https://rq.bitplan.com/images/rq/0/01/Pain1.png",
-             3: "https://rq.bitplan.com/images/rq/0/0a/Pain4.png",
-             4: "https://rq.bitplan.com/images/rq/0/0a/Pain4.png",
-             5: "https://rq.bitplan.com/images/rq/b/b0/Pain6.png",
-             6: "https://rq.bitplan.com/images/rq/b/b0/Pain6.png",
-             7: "https://rq.bitplan.com/images/rq/6/6c/Pain7.png",
-             8: "https://rq.bitplan.com/images/rq/6/6c/Pain7.png",
-             9: "https://rq.bitplan.com/images/rq/2/29/Pain10.png",
-            10: "https://rq.bitplan.com/images/rq/2/29/Pain10.png"
-        }
-        if rating in painImages:
-            return f'<img alt="{rating}" src="{painImages[rating]}" width="32" height="32"/>'
-        else:
-            return ""
-
-    def render(self):
-        painImage = self.lookupPainImage(self.rating.pain)
-        return f'<span title="{self.rating.hint}">{self.rating.pain}{painImage}</span>'
+# TODO Removed functionality for current refactoring
+# class RatingWidget(Widget):
+#     '''
+#     Displays a rating
+#     '''
+#
+#     def __init__(self, rating:Rating):
+#         super().__init__()
+#         self.rating = rating
+#
+#     @staticmethod
+#     def lookupPainImage(rating: int):
+#         '''Returns html image tag to the corresponding pain rating'''
+#         painImages = {
+#              0: "http://rq.bitplan.com/images/rq/a/a3/Pain0.png",
+#              1: "https://rq.bitplan.com/images/rq/0/01/Pain1.png",
+#              2: "https://rq.bitplan.com/images/rq/0/01/Pain1.png",
+#              3: "https://rq.bitplan.com/images/rq/0/0a/Pain4.png",
+#              4: "https://rq.bitplan.com/images/rq/0/0a/Pain4.png",
+#              5: "https://rq.bitplan.com/images/rq/b/b0/Pain6.png",
+#              6: "https://rq.bitplan.com/images/rq/b/b0/Pain6.png",
+#              7: "https://rq.bitplan.com/images/rq/6/6c/Pain7.png",
+#              8: "https://rq.bitplan.com/images/rq/6/6c/Pain7.png",
+#              9: "https://rq.bitplan.com/images/rq/2/29/Pain10.png",
+#             10: "https://rq.bitplan.com/images/rq/2/29/Pain10.png"
+#         }
+#         if rating in painImages:
+#             return f'<img alt="{rating}" src="{painImages[rating]}" width="32" height="32"/>'
+#         else:
+#             return ""
+#
+#     def render(self):
+#         painImage = self.lookupPainImage(self.rating.pain)
+#         return f'<span title="{self.rating.hint}">{self.rating.pain}{painImage}</span>'
 
 if __name__ == '__main__':
     # construct the web application    

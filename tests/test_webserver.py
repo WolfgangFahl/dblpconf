@@ -4,11 +4,11 @@ Created on 2021-01-26
 @author: wf
 '''
 import unittest
+from ConferenceCorpus.tests.testDblpXml import TestDblp
 from ormigrate.toolbox import HelperFunctions as hf
 from dblp.webserver import WebServer
 import os.path
 import datetime
-import tests.test_dblp
 import getpass
 import csv
 
@@ -26,7 +26,7 @@ class TestWebServer(unittest.TestCase):
         sourceWikiId='orclone'
         targetWikiId='myor'
         mock=True
-        dblp=tests.test_dblp.TestDblp.getMockedDblp(mock, debug=cls.debug) 
+        dblp=TestDblp.getMockedDblp(debug=cls.debug)
         cls.web=WebServer(dblp)
         app=cls.web.app
         app.config['TESTING'] = True
