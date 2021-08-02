@@ -3,7 +3,6 @@ Created on 2020-12-30
 
 @author: wf
 '''
-from wikifile.wikiFileManager import WikiFileManager
 from fb4.app import AppWrap
 from fb4.login_bp import LoginBluePrint
 from fb4.sqldb import db
@@ -15,15 +14,13 @@ from lodstorage.query import QueryManager
 from lodstorage.sparql import SPARQL
 from lodstorage.sql import SQLDB
 from lodstorage.storageconfig import StorageConfig
-from lodstorage.csv import CSV
-from dblp.dblpxml import Dblp
+
 from os.path import expanduser
 
 import os
 import json
 
 
-from action.wikiaction import WikiAction
 from wikibot.wikiuser import WikiUser
 from wikibot.wikiclient import WikiClient
 from wikibot.smw import SMW,SMWClient
@@ -141,18 +138,7 @@ class WebServer(AppWrap):
         for entityList in [self.OREventCorpus.eventManager,self.OREventCorpus.eventSeriesManager]:
             self.orEntityLists[entityList.entityName]=entityList
  
-        
-    def getPTPDB(self):
-        '''
-        get the proceedings title parser database 
-        (if available)
-        '''
-        sqlDB=None
-        home = expanduser("~")
-        dbname="%s/.ptp/Event_all.db" % home
-        if os.path.isfile(dbname):
-            sqlDB=SQLDB(dbname=dbname,debug=self.debug,errorDebug=True,check_same_thread=False)
-        return sqlDB
+
     
     def log(self,msg):
         '''
@@ -161,49 +147,28 @@ class WebServer(AppWrap):
         if self.verbose:
             print(msg)
         
-    def initDB(self):
+    def initConferenceCorpus(self):
         '''
-        initialize the database
+        initialize the conference Corpus
         '''
         self.log("Initializing Database ...")
         if self.dbInitialized:
-            return 
-        self.db.drop_all()
-        self.db.create_all()
-        self.initUsers()
-        if self.dblp is None:
-            self.dblp=Dblp(verbose=self.verbose)
-        self.dbs={}
-        self.dbs['dblp']=DB(self.dblp.getXmlSqlDB())
-        self.sqlDB=self.dbs['dblp'].sqlDB
-        ptpDB=self.getPTPDB()
-        if ptpDB is not None:
-            self.dbs['ptp']=DB(ptpDB)
+            # TODO - refactor to
+            pass
         self.dbInitialized=True
          
 
-    def updateCache(self):
+    def updateConferenceCorpus(self):
         '''
-        update the cache for the given wiki user
+        update the conferenceCorpus
         '''
+        # TODO - do not implement in beginning of August 2021
+        # other functions have priority
         wikiId = self.getWikiIdForLoggedInUser()
         wikiUser = hf.getSMW_WikiUser(wikiId)
         self.log(f"Updating cache from {wikiId}")
-        self.updateOrCache(wikiUser)
+        
         return self.showOpenResearchData('Event')
-
-    def updateOrCache(self, wikiUser:WikiUser):
-        '''
-        Updates the OpenResearch Cache file
-
-        Args:
-            wikiUser(WikiUser): wikiUser that should be used to load the cache if cache not already present
-        '''
-        #ToDo: Refactor once force is in LodStorage
-        orEventManager=OREventManager(config=self.config)
-        orEventManager.fromCache(wikiUser,force=True)
-        return orEventManager
-
         
     def getUserNameForWikiUser(self,wuser:WikiUser)->str:
         '''
@@ -275,11 +240,8 @@ class WebServer(AppWrap):
         '''
         show the list of wikidata entries
         '''
-        path="%s/../queries" % os.path.dirname(__file__)
-        qm=QueryManager(lang='sparql',debug=False,path=path)
-        endpoint="https://query.wikidata.org/sparql"
-        sparql=SPARQL(endpoint)
-        query=qm.queriesByName['Wikidata Conference Series']
+        # TODO simply get the listOfDicts from the WikiData EventManager ...
+        
         listOfDicts=sparql.queryAsListOfDicts(query.query,fixNone=True)
         for row in listOfDicts:
             row['confSeries']=Link(row['confSeries'],row['acronym'])
