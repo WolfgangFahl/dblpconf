@@ -619,7 +619,7 @@ class WebServer(AppWrap):
         # Add OPENRESEARCH
         orDropDownMenu=DropDownMenu('OpenResearch')
         for orEntityList in self.orEntityLists.values():
-            entityName=orEntityList.getEntityName()
+            entityName=orEntityList.entityName
             pluralName=entityName
             url=url_for('showOpenResearchData', entity=entityName)
             orDropDownMenu.addItem(Link(self.basedUrl(url), pluralName))
