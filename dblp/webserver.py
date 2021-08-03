@@ -12,6 +12,7 @@ from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from lodstorage.storageconfig import StorageConfig
 from corpus.lookup import CorpusLookup
+from wikifile.wikiFileManager import WikiFileManager
 
 import os
 import json
@@ -115,16 +116,33 @@ class WebServer(AppWrap):
         '''
         if self.verbose:
             print(msg)
+            
+    def configureCorpusLookup(self,lookup):
+        '''
+        callback to configure the corpus lookup
+        '''
+        if self.debug:
+            print("configuring CorpusLookup for default or/orclone and backups")
+        
+        for lookupId in ["or","orclone"]:
+            wikiId=lookupId
+            wikiUser=WikiUser.ofWikiId(wikiId, lenient=True)
+            home = os.path.expanduser("~")
+            wikiTextPath = f"{home}/.or/wikibackup/{wikiUser.wikiId}"
+            wikiFileManager = WikiFileManager(wikiId, wikiTextPath, login=False, debug=self.debug)
+     
+            orDataSource=lookup.getDataSource(lookupId)
+            orDataSource.eventManager.wikiFileManager=wikiFileManager
+            orDataSource.eventSeriesManager.wikiFileManager=wikiFileManager
+            orDataSource=lookup.getDataSource(f'{lookupId}-backup')
         
     def initConferenceLookup(self):
         '''
         initialize the conference Lookup Corpus
         '''
         self.log("Initializing ConferenceLookup...")
-        if self.look
-            # TODO - refactor to
-            pass
-        self.dbInitialized=True
+        self.lookup=CorpusLookup
+        self.lookup.load(configure=self.configureCorpusLookup)
          
 
     def updateConferenceCorpus(self):
@@ -209,9 +227,11 @@ class WebServer(AppWrap):
         '''
         show the list of wikidata entries
         '''
-        # TODO simply get the listOfDicts from the WikiData EventManager ...
-        
-        listOfDicts=sparql.queryAsListOfDicts(query.query,fixNone=True)
+        # get the wikiData data source
+        wikidataDataSource=self.lookup.getDataSource("wikidata")
+        # TODO make live/cache configurable
+        # live query or cache?
+        listOfDicts=wikidataDataSource.eventManager.getLoDfromEndpoint()
         for row in listOfDicts:
             row['confSeries']=Link(row['confSeries'],row['acronym'])
             if 'DBLP_pid' in row:
@@ -343,15 +363,15 @@ class WebServer(AppWrap):
         #     rating=Event.rateMigration
         # if entityName == "EventSeries":
         #     rating=EventSeries.rateMigration
-        entityList=self.orEntityLists[entityName]
-        # get the List of Dicts with ratings for the given entityList
-        lod,errors =  entityList.getRatedLod(ratingCallback=rating)
-        if len(errors)>0:
-            errorMsg = f"{len(errors)} rating processing errors"
-            print(errorMsg)
-            flash(message=errorMsg, category="warning")
-        wikiurl=self.wikiUser.getWikiUrl()
-        wikiurl="https://www.openresearch.org/wiki"
+        orDataSource=self.lookup.getDataSource("orclone-backup")
+        eventManager=orDataSource.eventManager
+        lod=eventManager.getLoDfromWikiFileManager()
+        #TODO - add rating again (later)
+        #if len(errors)>0:
+        #    errorMsg = f"{len(errors)} rating processing errors"
+        #    print(errorMsg)
+        #    flash(message=errorMsg, category="warning")
+        wikiurl=eventManager.wikiFileManager.wikiUser.getWikiUrl()
         for record in lod:
             if not current_user.is_authenticated:
                 # Remove record fields that should only be visable for users with login rights
@@ -520,7 +540,6 @@ class WebServer(AppWrap):
         if current_user.is_anonymous:
             menuList.append(MenuItem('/login','login'))
         else:
-            menuList.append(MenuItem(url_for('showLambdaActions'),"actions"))
             menuList.append(MenuItem('/logout','logout'))
         
         if activeItem is not None:
