@@ -10,12 +10,8 @@ from fb4.widgets import Link, MenuItem, DropDownMenu, Widget
 from flask import abort,flash,render_template, url_for,send_file,request,redirect
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
-from lodstorage.query import QueryManager
-from lodstorage.sparql import SPARQL
-from lodstorage.sql import SQLDB
 from lodstorage.storageconfig import StorageConfig
-
-from os.path import expanduser
+from corpus.lookup import CorpusLookup
 
 import os
 import json
@@ -25,8 +21,6 @@ from wikibot.wikiuser import WikiUser
 from wikibot.wikiclient import WikiClient
 from wikibot.smw import SMW,SMWClient
 from wtforms import HiddenField, SubmitField, StringField, SelectField
-from datasources.openresearch import OREventCorpus
-from datasources.openresearch import OREvent, OREventSeries, OREventManager
 from ormigrate.toolbox import HelperFunctions as hf
 from ormigrate.smw.rating import Rating
 
@@ -48,8 +42,7 @@ class WebServer(AppWrap):
         '''
         self.debug=debug
         self.verbose=verbose
-        self.dbInitialized=False
-        self.dblp=dblp
+        self.lookup=None
         scriptdir = os.path.dirname(os.path.abspath(__file__))
         template_folder=scriptdir + '/../templates'
         super().__init__(host=host,port=port,debug=debug,template_folder=template_folder)
@@ -105,38 +98,14 @@ class WebServer(AppWrap):
         @self.app.route('/openresearch/updatecache', methods=['GET', 'POST'])
         def updateCache():
             return self.updateCache()
-        
-        @login_required
-        @self.app.route('/lambdactions',methods=['GET', 'POST'])
-        def showLambdaActions():
-            return self.showLambdaActions()
  
     def init(self,sourceWikiId,targetWikiId):
         '''
         initialize me with the given sourceWikiId and targetWikiId
         '''
-        self.initDB()
+        self.initConferenceLookup()
         self.sourceWikiId=sourceWikiId
         self.targetWikiId=targetWikiId
-        self.initOREventCorpus(self.sourceWikiId)
-           
-    def initOREventCorpus(self,wikiId):
-        '''
-        initialize my OREventCorpus
-    
-        Args:
-             wikiId(str): id of the wiki to use as a CMS backend
-        '''
-        self.config = StorageConfig.getDefault()
-        self.log(f"Initializing event Corpus for source Wiki {wikiId}")
-        self.wikiUser = hf.getSMW_WikiUser(wikiId)
-        self.OREventCorpus=OREventCorpus(self.config)
-        self.OREventCorpus.fromWikiUser(self.wikiUser)
-        # countryList=CountryList()
-        # countryList.getDefault()
-        self.orEntityLists={}
-        for entityList in [self.OREventCorpus.eventManager,self.OREventCorpus.eventSeriesManager]:
-            self.orEntityLists[entityList.entityName]=entityList
  
 
     
@@ -147,12 +116,12 @@ class WebServer(AppWrap):
         if self.verbose:
             print(msg)
         
-    def initConferenceCorpus(self):
+    def initConferenceLookup(self):
         '''
-        initialize the conference Corpus
+        initialize the conference Lookup Corpus
         '''
-        self.log("Initializing Database ...")
-        if self.dbInitialized:
+        self.log("Initializing ConferenceLookup...")
+        if self.look
             # TODO - refactor to
             pass
         self.dbInitialized=True
@@ -490,44 +459,6 @@ class WebServer(AppWrap):
                 pass
         return result     
     
-        
-    def showLambdaActionsForSMW(self,smw:SMW,wuser:WikiUser):
-        '''
-        show the lambad Actions for the given Semantic MediaWiki and wiki user
-        
-        Args:
-            smw(SMW): the semantic mediawiki to use
-        '''
-        form = ActionForm()
-        wikiurl=wuser.getWikiUrl()
-        formatWith="%s/index.php/%%s" % wikiurl
-        wikiAction=WikiAction(smw)
-        sourceCodes=wikiAction.getSourceCodes()
-        queryList=[]
-        actionList=[]
-        for orow in list(sourceCodes.values()):
-            # get a copy of the row with the text column removed
-            row=orow.copy()
-            del row['text']
-            self.linkColumn("Sourcecode", row, formatWith)
-            lang=row['lang']
-            if lang=='python':
-                actionList.append(row)
-            else:
-                queryList.append(row)
-        if form.validate_on_submit():
-            actionName=self.getJsonColumn(form,"actionTableSelection",2)
-            queryName=self.getJsonColumn(form,"queryTableSelection",2)
-            lambdaAction=wikiAction.getLambdaAction("dblpconf-action",queryName,actionName)
-            context={"sqlDB": self.sqlDB,"smw":smw}
-            lambdaAction.execute(context)
-            message=lambdaAction.getMessage(context)
-            if message is not None:
-                flash(message)
-                   
-        menuList=self.adminMenuList("actions")
-        html=render_template("actions.html",form=form,title="actions",menuList=menuList,queryList=queryList,actionList=actionList)
-        return html
              
     def showSample(self,dbId:str,entity:str,limit:int):
         '''
@@ -627,14 +558,6 @@ class DB:
         self.sqlDB=sqlDB
         self.tableDict=self.sqlDB.getTableDict()
         pass
-
-class ActionForm(FlaskForm):
-    '''
-    the action form
-    '''
-    queryTableSelection = HiddenField()
-    actionTableSelection = HiddenField()
-    submit = SubmitField("execute")
 
 class RatingWidget(Widget):
     '''
