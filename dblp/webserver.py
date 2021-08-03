@@ -23,7 +23,7 @@ from wikibot.wikiclient import WikiClient
 from wikibot.smw import SMW,SMWClient
 from wtforms import HiddenField, SubmitField, StringField, SelectField
 from ormigrate.toolbox import HelperFunctions as hf
-from ormigrate.smw.rating import Rating
+from corpus.lookup import CorpusLookup
 
 class WebServer(AppWrap):
     ''' 
@@ -104,7 +104,11 @@ class WebServer(AppWrap):
         '''
         initialize me with the given sourceWikiId and targetWikiId
         '''
+<<<<<<< HEAD
         self.initConferenceLookup()
+=======
+        self.initConferenceCorpus()
+>>>>>>> 846eae14ce3dacc198d6ebe07b9fc1e7d03fbaeb
         self.sourceWikiId=sourceWikiId
         self.targetWikiId=targetWikiId
  
@@ -140,9 +144,20 @@ class WebServer(AppWrap):
         '''
         initialize the conference Lookup Corpus
         '''
+<<<<<<< HEAD
         self.log("Initializing ConferenceLookup...")
         self.lookup=CorpusLookup
         self.lookup.load(configure=self.configureCorpusLookup)
+=======
+        self.log("Initializing Conference Corpus ...")
+        lookup = CorpusLookup(lookupIds=["orclone", "dblp"])
+        orDataSource = lookup.getDataSource("orclone")
+        dblpDataSource = lookup.getDataSource("dblp")
+        if self.dbInitialized:
+            # TODO - refactor to
+            pass
+        self.dbInitialized=True
+>>>>>>> 846eae14ce3dacc198d6ebe07b9fc1e7d03fbaeb
          
 
     def updateConferenceCorpus(self):
@@ -578,6 +593,7 @@ class DB:
         self.tableDict=self.sqlDB.getTableDict()
         pass
 
+<<<<<<< HEAD
 class RatingWidget(Widget):
     '''
     Displays a rating
@@ -607,10 +623,51 @@ class RatingWidget(Widget):
             return f'<img alt="{rating}" src="{painImages[rating]}" width="32" height="32"/>'
         else:
             return ""
+=======
+class ActionForm(FlaskForm):
+    '''
+    the action form
+    '''
+    queryTableSelection = HiddenField()
+    actionTableSelection = HiddenField()
+    submit = SubmitField("execute")
 
-    def render(self):
-        painImage = self.lookupPainImage(self.rating.pain)
-        return f'<span title="{self.rating.hint}">{self.rating.pain}{painImage}</span>'
+>>>>>>> 846eae14ce3dacc198d6ebe07b9fc1e7d03fbaeb
+
+# TODO Removed functionality for current refactoring
+# class RatingWidget(Widget):
+#     '''
+#     Displays a rating
+#     '''
+#
+#     def __init__(self, rating:Rating):
+#         super().__init__()
+#         self.rating = rating
+#
+#     @staticmethod
+#     def lookupPainImage(rating: int):
+#         '''Returns html image tag to the corresponding pain rating'''
+#         painImages = {
+#              0: "http://rq.bitplan.com/images/rq/a/a3/Pain0.png",
+#              1: "https://rq.bitplan.com/images/rq/0/01/Pain1.png",
+#              2: "https://rq.bitplan.com/images/rq/0/01/Pain1.png",
+#              3: "https://rq.bitplan.com/images/rq/0/0a/Pain4.png",
+#              4: "https://rq.bitplan.com/images/rq/0/0a/Pain4.png",
+#              5: "https://rq.bitplan.com/images/rq/b/b0/Pain6.png",
+#              6: "https://rq.bitplan.com/images/rq/b/b0/Pain6.png",
+#              7: "https://rq.bitplan.com/images/rq/6/6c/Pain7.png",
+#              8: "https://rq.bitplan.com/images/rq/6/6c/Pain7.png",
+#              9: "https://rq.bitplan.com/images/rq/2/29/Pain10.png",
+#             10: "https://rq.bitplan.com/images/rq/2/29/Pain10.png"
+#         }
+#         if rating in painImages:
+#             return f'<img alt="{rating}" src="{painImages[rating]}" width="32" height="32"/>'
+#         else:
+#             return ""
+#
+#     def render(self):
+#         painImage = self.lookupPainImage(self.rating.pain)
+#         return f'<span title="{self.rating.hint}">{self.rating.pain}{painImage}</span>'
 
 if __name__ == '__main__':
     # construct the web application    
