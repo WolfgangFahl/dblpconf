@@ -4,7 +4,6 @@ Created on 2021-01-26
 @author: wf
 '''
 import unittest
-from ConferenceCorpus.tests.testDblpXml import TestDblp
 from ormigrate.toolbox import HelperFunctions as hf
 from dblp.webserver import WebServer
 import os.path
@@ -26,8 +25,7 @@ class TestWebServer(unittest.TestCase):
         sourceWikiId='orclone'
         targetWikiId='myor'
         mock=True
-        dblp=TestDblp.getMockedDblp(debug=cls.debug)
-        cls.web=WebServer(dblp)
+        cls.web=WebServer()
         app=cls.web.app
         app.config['TESTING'] = True
         app.config['WTF_CSRF_ENABLED'] = False
@@ -61,12 +59,12 @@ class TestWebServer(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testSamples(self):
+    def testDblpEventDataSource(self):
         '''
         test the samples handling
         '''
-        html=self.getResponse("/sample/dblp/article/100")
-        self.assertTrue("<th> publtype </th>" in html)
+        html=self.getResponse("/cc/dblp/Event/100")
+        self.assertTrue("> publicationSeries </th>" in html)
         pass
 
     def testOREvents(self):
@@ -76,19 +74,6 @@ class TestWebServer(unittest.TestCase):
         html=self.getResponse("/openresearch/Event")
         self.assertTrue("acronym" in html)
         pass
-
-    def testUpdateCache(self):
-        '''
-        test for the issue #18
-        '''
-        web = self.web
-        testUser = hf.getSMW_WikiUser("orclone")
-        eventList = web.updateOrCache(testUser)
-        filepath = eventList.getJsonFile()
-        lastModifyTime = datetime.datetime.fromtimestamp(os.path.getmtime(filepath))
-        now = datetime.datetime.now()
-        diff=now-lastModifyTime
-        self.assertTrue(diff.seconds < 30)
 
     def testCsvDownload(self):
         '''

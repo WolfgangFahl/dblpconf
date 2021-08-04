@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 {% import 'macros.html' as macros %}
 {% block content %}
+<a class="btn btn-primary" href="{{ downloadLink }}" role="button">Download Series</a>
 {% if title is not none %}<h2>{{ title }}</h2>{%endif %}
 {% if content is not none %}{{ content|safe }}{%endif %}
 {% endblock %}
