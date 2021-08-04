@@ -14,7 +14,7 @@ pycrypto
 #https://pypi.org/project/pydevd/
 pydevd
 # https://pypi.org/project/pylodstorage/
-pylodstorage>= 0.0.62
+pylodstorage>= 0.0.63
 # parser
 lxml
 # https://github.com/SmartDataAnalytics/OpenResearch
@@ -22,4 +22,4 @@ OpenResearchMigration>= 0.0.25
 # https://pypi.org/project/wikirender/
 wikirender>=0.0.24
 # https://pypi.org/project/ConferenceCorpus/
-ConferenceCorpus>=0.0.7
+ConferenceCorpus>=0.0.11
