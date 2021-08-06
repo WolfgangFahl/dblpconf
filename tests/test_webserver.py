@@ -6,6 +6,7 @@ Created on 2021-01-26
 import unittest
 from ormigrate.toolbox import HelperFunctions as hf
 from dblp.webserver import WebServer
+from datasources.dblpxml import DblpXml
 import os.path
 import datetime
 import getpass
@@ -37,12 +38,28 @@ class TestWebServer(unittest.TestCase):
         cls.web.init(sourceWikiId, targetWikiId,cls.configureCorpusLookup)
         pass
 
+    @staticmethod
+    def getMockedDblp(mock=True, debug=False):
+        dblpXml = DblpXml(debug=debug)
+        if mock:
+            dblpXml.xmlpath = "/tmp/dblp"
+            dblpXml.gzurl = "https://github.com/WolfgangFahl/ConferenceCorpus/wiki/data/dblpsample.xml.gz"
+            dblpXml.reinit()
+        xmlfile = dblpXml.getXmlFile()
+        if debug:
+            print("dblp xml file is  %s with size %5.1f MB" % (xmlfile, dblpXml.getSize() / 1024 / 1024))
+        return dblpXml
+
     @classmethod
     def configureCorpusLookup(cls, lookup:CorpusLookup):
         '''
         callback to configure the corpus lookup
         '''
         print("configureCorpusLookup callback called")
+        dblpDataSource = lookup.getDataSource("dblp")
+        dblpXml = cls.getMockedDblp(debug=cls.debug)
+        dblpDataSource.eventManager.dblpXml = dblpXml
+        dblpDataSource.eventSeriesManager.dblpXml = dblpXml
         for lookupId in ["orclone"]:
             wikiUser = TestSMW.getSMW_WikiUser(lookupId, save=True)
             orDataSource = lookup.getDataSource(f'{lookupId}')
