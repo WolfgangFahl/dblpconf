@@ -34,7 +34,7 @@ class TestWebServer(unittest.TestCase):
         app.config['DEBUG'] = False
         cls.app = app.test_client()
         # https://stackoverflow.com/questions/44417552/working-outside-of-application-context-flaskclient-object-has-no-attribute-app
-        cls.web.init(sourceWikiId, targetWikiId)
+        cls.web.init(sourceWikiId, targetWikiId,cls.configureCorpusLookup)
         pass
 
     @classmethod
@@ -43,9 +43,9 @@ class TestWebServer(unittest.TestCase):
         callback to configure the corpus lookup
         '''
         print("configureCorpusLookup callback called")
-        for lookupId in ["or", "orclone"]:
+        for lookupId in ["orclone"]:
             wikiUser = TestSMW.getSMW_WikiUser(lookupId, save=True)
-            orDataSource = lookup.getDataSource(f'{lookupId}-backup')
+            orDataSource = lookup.getDataSource(f'{lookupId}')
             wikiFileManager = TestSMW.getWikiFileManager(wikiId=lookupId)
             orDataSource.eventManager.wikiFileManager = wikiFileManager
             orDataSource.eventSeriesManager.wikiFileManager = wikiFileManager
