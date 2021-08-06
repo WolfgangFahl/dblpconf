@@ -34,7 +34,7 @@ class TestWebServer(unittest.TestCase):
         app.config['DEBUG'] = False
         cls.app = app.test_client()
         # https://stackoverflow.com/questions/44417552/working-outside-of-application-context-flaskclient-object-has-no-attribute-app
-        TestSMW.getSMW_WikiUser(sourceWikiId, save=True)
+        TestSMW.getSMW_WikiUser(sourceWikiId, save=TestSMW.inPublicCI())
         cls.web.init(sourceWikiId, targetWikiId)
         pass
 
