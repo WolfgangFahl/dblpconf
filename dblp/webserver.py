@@ -111,11 +111,11 @@ class WebServer(AppWrap):
         def updateCache():
             return self.updateCache()
  
-    def init(self,sourceWikiId,targetWikiId):
+    def init(self,sourceWikiId,targetWikiId,corpusConfiguration=CorpusLookupConfigure.configureCorpusLookup):
         '''
         initialize me with the given sourceWikiId and targetWikiId
         '''
-        self.initConferenceLookup()
+        self.initConferenceLookup(corpusConfiguration)
         self.sourceWikiId=sourceWikiId
         self.targetWikiId=targetWikiId
  
@@ -128,12 +128,13 @@ class WebServer(AppWrap):
         if self.verbose:
             print(msg)
 
-    def initConferenceLookup(self):
+
+    def initConferenceLookup(self,corpusConfiguration=CorpusLookupConfigure.configureCorpusLookup):
         '''
         initialize the conference Lookup Corpus
         '''
         self.log("Initializing ConferenceLookup...")
-        self.lookup=CorpusLookup(lookupIds=["orclone","orclone-backup", "dblp", "wikidata"], configure=CorpusLookupConfigure.configureCorpusLookup)
+        self.lookup=CorpusLookup(lookupIds=["orclone","orclone-backup", "dblp", "wikidata"], configure=corpusConfiguration)
         self.lookup.load()
         self.orDataSource = self.lookup.getDataSource("orclone-backup")
         self.dblpDataSource = self.lookup.getDataSource("dblp")

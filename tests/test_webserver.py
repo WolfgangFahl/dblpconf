@@ -10,6 +10,8 @@ import os.path
 import datetime
 import getpass
 import csv
+from corpus.lookup import CorpusLookup
+from tests.testSMW import TestSMW
 
 class TestWebServer(unittest.TestCase):
     '''
@@ -32,10 +34,30 @@ class TestWebServer(unittest.TestCase):
         app.config['DEBUG'] = False
         cls.app = app.test_client()
         # https://stackoverflow.com/questions/44417552/working-outside-of-application-context-flaskclient-object-has-no-attribute-app
-        
+        TestSMW.getSMW_WikiUser(sourceWikiId, save=True)
         cls.web.init(sourceWikiId, targetWikiId)
         pass
-    
+
+    @classmethod
+    def configureCorpusLookup(cls, lookup:CorpusLookup):
+        '''
+        callback to configure the corpus lookup
+        '''
+        print("configureCorpusLookup callback called")
+        for lookupId in ["or", "orclone"]:
+            wikiUser = TestSMW.getSMW_WikiUser(lookupId, save=True)
+            orDataSource = lookup.getDataSource(f'{lookupId}-backup')
+            wikiFileManager = TestSMW.getWikiFileManager(wikiId=lookupId)
+            orDataSource.eventManager.wikiFileManager = wikiFileManager
+            orDataSource.eventSeriesManager.wikiFileManager = wikiFileManager
+            orDataSource = lookup.getDataSource(lookupId)
+            orDataSource.eventManager.wikiUser = wikiUser
+            orDataSource.eventSeriesManager.wikiUser = wikiUser
+
+        # wikiuser=TestSMW.getWikiUser()
+        pass
+
+
     def setUp(self):
         self.debug=TestWebServer.debug
         self.app=TestWebServer.app
