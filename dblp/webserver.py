@@ -4,6 +4,7 @@ Created on 2020-12-30
 @author: wf
 '''
 from functools import partial
+from os.path import expanduser
 
 from corpus.eventcorpus import EventDataSource
 from fb4.app import AppWrap
@@ -346,7 +347,7 @@ class WebServer(AppWrap):
             eventManager=self.orDataSource.eventManager
             csvString=eventManager.asCsv(selectorCallback=partial(eventManager.getEventsInSeries, pagename))
         # ToDo: write csvString to temp file for download
-        filepath='/tmp/dblpConf/test.csv'
+        filepath=f"{expanduser('~')}/.ptp/csvs/{pagename}.csv"
         CSV.writeFile(csvString, filepath)
         if self.debug:
             print(filepath)
