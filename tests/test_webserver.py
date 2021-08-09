@@ -4,13 +4,8 @@ Created on 2021-01-26
 @author: wf
 '''
 import unittest
-from ormigrate.toolbox import HelperFunctions as hf
 from dblp.webserver import WebServer
-from datasources.dblpxml import DblpXml
-import os.path
-import datetime
-import getpass
-import csv
+from corpus.datasources.dblpxml import DblpXml
 from corpus.lookup import CorpusLookup
 from tests.testSMW import TestSMW
 
@@ -27,7 +22,6 @@ class TestWebServer(unittest.TestCase):
         cls.debug=False
         sourceWikiId='orclone'
         targetWikiId='myor'
-        mock=True
         cls.web=WebServer()
         app=cls.web.app
         app.config['TESTING'] = True
@@ -37,18 +31,19 @@ class TestWebServer(unittest.TestCase):
         # https://stackoverflow.com/questions/44417552/working-outside-of-application-context-flaskclient-object-has-no-attribute-app
         cls.web.init(sourceWikiId, targetWikiId,cls.configureCorpusLookup)
         pass
-
+    
     @staticmethod
-    def getMockedDblp(mock=True, debug=False):
-        dblpXml = DblpXml(debug=debug)
+    def getMockedDblp(mock=True,debug=False):
+        dblpXml=DblpXml(debug=debug)
         if mock:
-            dblpXml.xmlpath = "/tmp/dblp"
-            dblpXml.gzurl = "https://github.com/WolfgangFahl/ConferenceCorpus/wiki/data/dblpsample.xml.gz"
+            dblpXml.xmlpath="/tmp/dblp"
+            dblpXml.gzurl="https://github.com/WolfgangFahl/ConferenceCorpus/wiki/data/dblpsample.xml.gz"
             dblpXml.reinit()
-        xmlfile = dblpXml.getXmlFile()
+        xmlfile=dblpXml.getXmlFile()
         if debug:
-            print("dblp xml file is  %s with size %5.1f MB" % (xmlfile, dblpXml.getSize() / 1024 / 1024))
+            print("dblp xml file is  %s with size %5.1f MB" % (xmlfile,dblpXml.getSize()/1024/1024))
         return dblpXml
+        
 
     @classmethod
     def configureCorpusLookup(cls, lookup:CorpusLookup):
@@ -123,15 +118,6 @@ class TestWebServer(unittest.TestCase):
         self.assertIsNotNone(eventSeriesFile)
         pass
 
-    def testORCountries(self):
-        '''
-        test OPENSRESEARCH event list
-        '''
-        if getpass.getuser()!="wf":
-            return
-        html=self.getResponse("/openresearch/Country")
-        self.assertTrue("wikidataId" in html)
-        pass
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']

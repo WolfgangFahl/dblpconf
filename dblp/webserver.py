@@ -352,7 +352,7 @@ class WebServer(AppWrap):
         CSV.writeFile(csvString, filepath)
         if self.debug:
             print(filepath)
-        return send_file(filepath, as_attachment=True,cache_timeout=0)
+        return send_file(filepath, as_attachment=True,max_age=0)
         
 
     def getCsvFromUser(self):
@@ -387,12 +387,10 @@ class WebServer(AppWrap):
             #rating=Event.rateMigration
             eventManager=orDataSource.eventManager
             lod=eventManager.getList()
-            wikiurl=eventManager.wikiFileManager.wikiUser.getWikiUrl()
         if entityName == "EventSeries":
             #rating=EventSeries.rateMigration
             eventSeriesManager=orDataSource.eventSeriesManager
             lod=eventSeriesManager.getList()
-            wikiurl=eventSeriesManager.wikiFileManager.wikiUser.getWikiUrl()
         lod = [vars(d).copy() for d in lod]
         #TODO - add rating again (later)
         #if len(errors)>0:
@@ -408,7 +406,7 @@ class WebServer(AppWrap):
             if 'pageTitle' in record:
                 record['orpage']=self.fixPageTitle(record['pageTitle'])
                 self.convertToLink(record,'orpage',f"/openresearch/{entityName}/%s")
-            self.convertToLink(record, 'pageTitle', f"{wikiurl}/%s")
+            #self.convertToLink(record, 'pageTitle', f"{wikiurl}/%s")
             self.convertToLink(record, 'wikidataId', "https://www.wikidata.org/wiki/%s")
             self.convertToLink(record, 'dblpSeries', "https://dblp.org/db/conf/%s/index.html")
             if "lastEditor" in record:
