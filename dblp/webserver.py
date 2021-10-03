@@ -15,11 +15,10 @@ from flask import abort,flash,render_template, url_for,send_file,request,redirec
 from flask_login import current_user, login_required
 from flask_wtf import FlaskForm
 from lodstorage.csv import CSV
-from lodstorage.sql import SQLDB
-from lodstorage.storageconfig import StorageConfig
+
 from corpus.lookup import CorpusLookup, CorpusLookupConfigure
 from ormigrate.smw.rating import Rating
-from wikifile.wikiFileManager import WikiFileManager
+
 
 import os
 import json
@@ -295,15 +294,15 @@ class WebServer(AppWrap):
         '''
         menuList = self.adminMenuList("OpenResearch")
         # TODO Decide which wikiUser to use e.g.
-        eventManager=self.orDataSource.eventManager
-        if hasattr(eventManager, 'wikiUser'):
-            wikiUser=eventManager.wikiUser
+        smwHandler=self.orDataSource.eventManager.smwHandler
+        if hasattr(smwHandler, 'wikiUser'):
+            wikiUser=smwHandler.wikiUser
         else:
-            wikiUser=eventManager.wikiFileManager.wikiUser
+            wikiUser=smwHandler.wikiFileManager.wikiUser
         wikiclient=WikiClient.ofWikiUser(wikiUser)
         content=wikiclient.getHtml(pageName)
         title=f"entity: {entityName} pageName: {pageName} url for wikiuser: {wikiUser.getWikiUrl()}"
-        downloadLink=f"/openresearch/EventSeries/{pageName}/download"
+        downloadLink=f"/openresearch/{entityName}/{pageName}/download"
         return render_template("orpage.html",title=title,content=content,menuList=menuList, downloadLink=downloadLink)
         
     def fixPageTitle(self,pageTitle:str):
@@ -341,18 +340,17 @@ class WebServer(AppWrap):
         '''
         # ToDo align to ConferenceCorpus interface
         csvString=''
-        if entityname == 'Event':
-            #filepath=self.OREventCorpus.getEventCsv(pagename)
-            pass
-        elif entityname == 'EventSeries':
-            eventManager=self.orDataSource.eventManager
-            csvString=eventManager.asCsv(selectorCallback=partial(eventManager.getEventsInSeries, pagename))
-        # ToDo: write csvString to temp file for download
+        OREventManager = self.orDataSource.eventManager
+        if entityname.lower() == 'event':
+            csvString = OREventManager.asCsv(selectorCallback=partial(OREventManager.getEventByKey, pagename))
+        elif entityname.lower() == 'eventseries':
+            csvString=OREventManager.asCsv(selectorCallback=partial(OREventManager.getEventsInSeries, pagename))
+        #Writing to temp file does not work with send_file as temp file is deleted when function scope ends.
         filepath=f"{expanduser('~')}/.ptp/csvs/{pagename}.csv"
         CSV.writeFile(csvString, filepath)
         if self.debug:
             print(filepath)
-        return send_file(filepath, as_attachment=True,max_age=0)
+        return send_file(filepath, as_attachment=True, cache_timeout=-1)
         
 
     def getCsvFromUser(self):
@@ -362,9 +360,13 @@ class WebServer(AppWrap):
         if request.method == "POST":
             if request.files:
                 csv = request.files["csv"]
-                # TODO: Process file to wikiFile using OREventCorpus
-                wikiURL=self.getWikiURLForLoggedInUser()
-                return redirect(wikiURL)
+                csvString= csv.read().decode('utf-8')
+                print(csvString)
+                eventMananger= self.orDataSource.eventManager
+                #TODO: When target wiki functionality is available in wikirender
+                # updateEntityCallback= partial(eventMananger.smwEntity.updateEntitytoWiki(uploadToWikiCallback=eventMananger))
+                eventMananger.fromCsv(csvString=csvString,updateEntitiesCallback=eventMananger.smwHandler.updateEntitytoWiki)
+
         menuList = self.adminMenuList("OpenResearch")
         html = render_template('upload.html',menuList=menuList)
         return html
