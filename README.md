@@ -1,6 +1,8 @@
 # dblpconf
 dblp conferences
 
+This project has been sunset on 2022-12-04 please use [pysotsog](https://github.com/WolfgangFahl/pysotsog) instead
+
 [![python versions](https://img.shields.io/pypi/pyversions/dblpconf)](https://pypi.org/project/dblpconf/)
 [![Github Actions Build](https://github.com/WolfgangFahl/dblpconf/workflows/Build/badge.svg?branch=main)](https://github.com/WolfgangFahl/dblpconf/actions?query=workflow%3ABuild+branch%3Amain)
 [![PyPI Status](https://img.shields.io/pypi/v/dblpconf.svg)](https://pypi.python.org/pypi/dblpconf/)
